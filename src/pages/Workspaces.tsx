@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { mockWorkspaces, mockCheckpoints, mockObligations, mockDecisions, mockTelemetry, mockEvidence } from '../mockData';
+import { mockWorkspaces, mockCheckpoints, mockObligations, mockDecisions, mockTelemetry, mockEvidence, mockPolicyPacks } from '../mockData';
 import { StatusBadge, SeverityBadge, OutcomeBadge } from '../components/Badges';
 import { 
   Search, 
@@ -89,78 +89,85 @@ export function Workspaces() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredWorkspaces.map((ws) => (
-          <Card 
-            key={ws.id} 
-            className="bg-surface border-border hover:border-accent/50 transition-all duration-300 group cursor-pointer"
-            onClick={() => navigate(`/workspaces/${ws.id}`)}
-          >
-            <CardHeader className="pb-4">
-              <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <CardTitle className="text-foreground group-hover:text-accent transition-colors flex items-center gap-2">
-                    {ws.name}
-                    <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </CardTitle>
-                  <CardDescription className="text-muted-foreground line-clamp-1">{ws.description}</CardDescription>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-card" onClick={(e) => e.stopPropagation()}>
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-card border-border text-foreground">
-                    <DropdownMenuItem onClick={() => navigate(`/workspaces/${ws.id}`)}>View Details</DropdownMenuItem>
-                    <DropdownMenuItem>Edit Workspace</DropdownMenuItem>
-                    <DropdownMenuItem className="text-error">Archive</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Users className="w-3 h-3" />
-                  <span>{ws.owner}</span>
-                </div>
-                <StatusBadge status={ws.status} />
-              </div>
+        {filteredWorkspaces.map((ws) => {
+          const wsDecisions = mockDecisions.filter(d => d.workspaceId === ws.id);
+          const latestDecision = [...wsDecisions].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
+          const wsObligations = mockObligations.filter(o => o.workspaceId === ws.id);
+          const openObligationsCount = wsObligations.filter(o => o.status === 'OPEN').length;
 
-              <div className="grid grid-cols-2 gap-4 py-4 border-y border-border/50">
-                <div className="space-y-1">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Risk Level</p>
-                  <SeverityBadge severity={ws.riskLevel} />
+          return (
+            <Card 
+              key={ws.id} 
+              className="bg-surface border-border hover:border-accent/50 transition-all duration-300 group cursor-pointer"
+              onClick={() => navigate(`/workspaces/${ws.id}`)}
+            >
+              <CardHeader className="pb-4">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <CardTitle className="text-foreground group-hover:text-accent transition-colors flex items-center gap-2">
+                      {ws.name}
+                      <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </CardTitle>
+                    <CardDescription className="text-muted-foreground line-clamp-1">{ws.description}</CardDescription>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-card" onClick={(e) => e.stopPropagation()}>
+                        <MoreVertical className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-card border-border text-foreground">
+                      <DropdownMenuItem onClick={() => navigate(`/workspaces/${ws.id}`)}>View Details</DropdownMenuItem>
+                      <DropdownMenuItem>Edit Workspace</DropdownMenuItem>
+                      <DropdownMenuItem className="text-error">Archive</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Last Decision</p>
-                  <OutcomeBadge outcome={ws.lastDecisionOutcome} />
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Users className="w-3 h-3" />
+                    <span>{ws.owner}</span>
+                  </div>
+                  <StatusBadge status={ws.status} />
                 </div>
-              </div>
 
-              <div className="flex items-center justify-between pt-2">
-                <div className="flex items-center gap-4">
-                  <div className="flex flex-col">
-                    <span className="text-lg font-bold text-foreground">{ws.openObligationsCount}</span>
-                    <span className="text-[10px] uppercase text-muted-foreground font-medium">Obligations</span>
+                <div className="grid grid-cols-2 gap-4 py-4 border-y border-border/50">
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Risk Level</p>
+                    <SeverityBadge severity={ws.riskLevel} />
                   </div>
-                  <div className="h-8 w-[1px] bg-border" />
-                  <div className="flex flex-col">
-                    <span className="text-lg font-bold text-foreground">12</span>
-                    <span className="text-[10px] uppercase text-muted-foreground font-medium">Decisions</span>
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Last Decision</p>
+                    <OutcomeBadge outcome={latestDecision?.outcome || 'ADVISE'} />
                   </div>
                 </div>
-                
-                {ws.status === 'BLOCKED' && (
-                  <div className="flex items-center gap-1.5 text-error">
-                    <AlertCircle className="w-4 h-4" />
-                    <span className="text-xs font-medium">Action Required</span>
+
+                <div className="flex items-center justify-between pt-2">
+                  <div className="flex items-center gap-4">
+                    <div className="flex flex-col">
+                      <span className="text-lg font-bold text-foreground">{openObligationsCount}</span>
+                      <span className="text-[10px] uppercase text-muted-foreground font-medium">Obligations</span>
+                    </div>
+                    <div className="h-8 w-[1px] bg-border" />
+                    <div className="flex flex-col">
+                      <span className="text-lg font-bold text-foreground">{wsDecisions.length}</span>
+                      <span className="text-[10px] uppercase text-muted-foreground font-medium">Decisions</span>
+                    </div>
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                  
+                  {ws.status === 'BLOCKED' && (
+                    <div className="flex items-center gap-1.5 text-error">
+                      <AlertCircle className="w-4 h-4" />
+                      <span className="text-xs font-medium">Action Required</span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );
@@ -675,9 +682,14 @@ function WorkspaceDetail({ workspace, onBack }: { workspace: any, onBack: () => 
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
-                        {d.policyRefs.map((p, i) => (
-                          <Badge key={i} variant="secondary" className="text-[8px] px-1 py-0 h-4">{p}</Badge>
-                        ))}
+                        {d.policyRefs.map((pId, i) => {
+                          const pack = mockPolicyPacks.find(p => p.id === pId);
+                          return (
+                            <Badge key={i} variant="secondary" className="text-[8px] px-1 py-0 h-4">
+                              {pack?.name || pId}
+                            </Badge>
+                          );
+                        })}
                       </div>
                     </TableCell>
                     <TableCell>

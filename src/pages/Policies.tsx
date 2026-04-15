@@ -46,89 +46,95 @@ export function Policies() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {mockPolicyPacks.map((pack) => (
-          <Card key={pack.id} className="bg-surface border-border hover:border-accent/30 transition-all duration-300 group cursor-pointer" onClick={() => navigate(`/policies/${pack.id}`)}>
-            <CardHeader className="pb-4 border-b border-border bg-card/30">
-              <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-3">
-                    <CardTitle className="text-lg font-bold text-foreground group-hover:text-accent transition-colors">{pack.name}</CardTitle>
-                    <StatusBadge status={pack.status} />
-                  </div>
-                  <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
-                    <span className="font-mono text-accent">v{pack.version}</span>
-                    <span>•</span>
-                    <span className="flex items-center gap-1">
-                      <Globe className="w-3 h-3" />
-                      {pack.scope}
-                    </span>
-                    <span>•</span>
-                    <span>{pack.rules.length} Rules</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); }}>
-                    <History className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); }}>
-                    <Settings2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-6 space-y-6">
-              <div className="grid grid-cols-3 gap-4">
-                <div className="p-3 rounded-lg bg-card border border-border space-y-1">
-                  <p className="text-[9px] text-muted-foreground uppercase font-bold">Impact</p>
-                  <p className="text-sm font-bold text-foreground">1.2k Decisions</p>
-                </div>
-                <div className="p-3 rounded-lg bg-card border border-border space-y-1">
-                  <p className="text-[9px] text-muted-foreground uppercase font-bold">Denials</p>
-                  <p className="text-sm font-bold text-error">42</p>
-                </div>
-                <div className="p-3 rounded-lg bg-card border border-border space-y-1">
-                  <p className="text-[9px] text-muted-foreground uppercase font-bold">Compliance</p>
-                  <p className="text-sm font-bold text-success">98.2%</p>
-                </div>
-              </div>
+        {mockPolicyPacks.map((pack) => {
+          const relatedDecisions = mockDecisions.filter(d => d.policyRefs.includes(pack.id));
+          const denialCount = relatedDecisions.filter(d => d.outcome === 'DENY').length;
+          const complianceScore = relatedDecisions.length > 0 ? Math.round(((relatedDecisions.length - denialCount) / relatedDecisions.length) * 1000) / 10 : 100;
 
-              <div className="space-y-3">
-                <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Active Governance Rules</h4>
-                <div className="space-y-2">
-                  {pack.rules.slice(0, 3).map((rule) => (
-                    <div key={rule.id} className="p-3 rounded-lg bg-card border border-border flex items-center justify-between group/rule">
-                      <div className="flex items-start gap-3">
-                        <div className={cn(
-                          "mt-1 p-1.5 rounded bg-surface border border-border",
-                          rule.mode === 'BLOCKING' ? 'text-error' : rule.mode === 'WARNING' ? 'text-warning' : 'text-accent'
-                        )}>
-                          {rule.mode === 'BLOCKING' ? <Lock className="w-3 h-3" /> : rule.mode === 'WARNING' ? <AlertTriangle className="w-3 h-3" /> : <Info className="w-3 h-3" />}
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold text-foreground">{rule.name}</p>
-                          <p className="text-[10px] text-muted-foreground line-clamp-1">{rule.description}</p>
+          return (
+            <Card key={pack.id} className="bg-surface border-border hover:border-accent/30 transition-all duration-300 group cursor-pointer" onClick={() => navigate(`/policies/${pack.id}`)}>
+              <CardHeader className="pb-4 border-b border-border bg-card/30">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-3">
+                      <CardTitle className="text-lg font-bold text-foreground group-hover:text-accent transition-colors">{pack.name}</CardTitle>
+                      <StatusBadge status={pack.status} />
+                    </div>
+                    <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
+                      <span className="font-mono text-accent">v{pack.version}</span>
+                      <span>•</span>
+                      <span className="flex items-center gap-1">
+                        <Globe className="w-3 h-3" />
+                        {pack.scope}
+                      </span>
+                      <span>•</span>
+                      <span>{pack.rules.length} Rules</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); }}>
+                      <History className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); }}>
+                      <Settings2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="p-3 rounded-lg bg-card border border-border space-y-1">
+                    <p className="text-[9px] text-muted-foreground uppercase font-bold">Impact</p>
+                    <p className="text-sm font-bold text-foreground">{relatedDecisions.length} Decisions</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-card border border-border space-y-1">
+                    <p className="text-[9px] text-muted-foreground uppercase font-bold">Denials</p>
+                    <p className="text-sm font-bold text-error">{denialCount}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-card border border-border space-y-1">
+                    <p className="text-[9px] text-muted-foreground uppercase font-bold">Compliance</p>
+                    <p className="text-sm font-bold text-success">{complianceScore}%</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Active Governance Rules</h4>
+                  <div className="space-y-2">
+                    {pack.rules.slice(0, 3).map((rule) => (
+                      <div key={rule.id} className="p-3 rounded-lg bg-card border border-border flex items-center justify-between group/rule">
+                        <div className="flex items-start gap-3">
+                          <div className={cn(
+                            "mt-1 p-1.5 rounded bg-surface border border-border",
+                            rule.mode === 'BLOCKING' ? 'text-error' : rule.mode === 'WARNING' ? 'text-warning' : 'text-accent'
+                          )}>
+                            {rule.mode === 'BLOCKING' ? <Lock className="w-3 h-3" /> : rule.mode === 'WARNING' ? <AlertTriangle className="w-3 h-3" /> : <Info className="w-3 h-3" />}
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-foreground">{rule.name}</p>
+                            <p className="text-[10px] text-muted-foreground line-clamp-1">{rule.description}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                  {pack.rules.length > 3 && (
-                    <p className="text-[10px] text-muted-foreground italic text-center">+{pack.rules.length - 3} more rules...</p>
-                  )}
+                    ))}
+                    {pack.rules.length > 3 && (
+                      <p className="text-[10px] text-muted-foreground italic text-center">+{pack.rules.length - 3} more rules...</p>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              <div className="pt-4 border-t border-border flex items-center justify-between text-[10px] text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-3 h-3" />
-                  <span>Last updated {new Date(pack.lastUpdated).toLocaleDateString()}</span>
+                <div className="pt-4 border-t border-border flex items-center justify-between text-[10px] text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-3 h-3" />
+                    <span>Last updated {new Date(pack.lastUpdated).toLocaleDateString()}</span>
+                  </div>
+                  <Button variant="link" className="text-accent h-auto p-0 text-[10px] font-bold hover:text-accent/80">
+                    View Full Policy Definition
+                  </Button>
                 </div>
-                <Button variant="link" className="text-accent h-auto p-0 text-[10px] font-bold hover:text-accent/80">
-                  View Full Policy Definition
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );
@@ -141,7 +147,7 @@ export function PolicyDetail() {
   const pack = mockPolicyPacks.find(p => p.id === id);
   if (!pack) return <div className="p-8 text-center text-muted-foreground">Policy Pack not found</div>;
 
-  const relatedDecisions = mockDecisions.filter(d => d.policyRefs.includes(pack.name));
+  const relatedDecisions = mockDecisions.filter(d => d.policyRefs.includes(pack.id));
   const blockingRules = pack.rules.filter(r => r.mode === 'BLOCKING').length;
   const warningRules = pack.rules.filter(r => r.mode === 'WARNING').length;
   const advisoryRules = pack.rules.filter(r => r.mode === 'ADVISORY').length;

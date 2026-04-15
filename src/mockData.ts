@@ -209,8 +209,8 @@ export const mockDecisions: Decision[] = [
     outcome: 'ALLOW',
     reasonCodes: ['POLICY_PASSED', 'EVIDENCE_VALIDATED'],
     obligationIds: [],
-    policyRefs: ['PP-01-V2', 'PP-05-V1'],
-    traceId: 'tr-778899',
+    policyRefs: ['pp-1', 'pp-3'],
+    traceId: 'tr-1',
     payload: { action: 'DEPLOY', target: 'PROD' },
     context: { environment: 'production', branch: 'main' },
   },
@@ -223,8 +223,8 @@ export const mockDecisions: Decision[] = [
     outcome: 'DENY',
     reasonCodes: ['MISSING_SECURITY_SCAN', 'CRITICAL_VULNERABILITY'],
     obligationIds: ['ob-3', 'ob-4'],
-    policyRefs: ['PP-02-V3'],
-    traceId: 'tr-112233',
+    policyRefs: ['pp-1', 'pp-2'],
+    traceId: 'tr-2',
     payload: { action: 'MERGE_PR', prId: '456' },
     context: { repository: 'auth-service', risk_score: 85 },
   },
@@ -233,17 +233,19 @@ export const mockDecisions: Decision[] = [
 // Generate more decisions to reach 40
 for (let i = 3; i <= 40; i++) {
   const outcomes: any[] = ['ALLOW', 'DENY', 'REQUIRE_EVIDENCE', 'ADVISE', 'WARNING'];
+  const wsId = `ws-${(i % 8) + 1}`;
+  const ppId = `pp-${(i % 5) + 1}`;
   mockDecisions.push({
     id: `dec-${i}`,
     timestamp: `2024-04-${(i % 15) + 1}T${10 + (i % 12)}:00:00Z`,
     intentId: `int-${200 + i}`,
-    workspaceId: `ws-${(i % 8) + 1}`,
+    workspaceId: wsId,
     actor: i % 2 === 0 ? 'system-kernel' : 'operator-x',
     outcome: outcomes[i % 5],
     reasonCodes: ['RULE_CHECK', 'CONTEXT_EVAL'],
     obligationIds: i % 5 === 2 ? [`ob-${i}`] : [],
-    policyRefs: [`PP-0${(i % 5) + 1}-V1`],
-    traceId: `tr-trace-${i}`,
+    policyRefs: [ppId],
+    traceId: `tr-${i}`,
     payload: { action: 'UPDATE_CONFIG', key: 'max_retries' },
     context: { source: 'cli', version: '1.2.0' },
   });
@@ -312,16 +314,19 @@ export const mockPolicyPacks: PolicyPack[] = [
 ];
 
 export const mockTelemetry: TelemetryTrace[] = [];
-for (let i = 1; i <= 20; i++) {
-  mockTelemetry.push({
-    id: `tr-${1000 + i}`,
-    timestamp: `2024-04-15T${10 + Math.floor(i / 2)}:${(i * 3) % 60}:00Z`,
-    decisionId: `dec-${i}`,
-    latencyMs: 45 + Math.random() * 200,
-    outcome: ['ALLOW', 'DENY', 'REQUIRE_EVIDENCE', 'ADVISE', 'WARNING'][i % 5] as any,
-    workspaceId: `ws-${(i % 8) + 1}`,
-    error: i % 10 === 0 ? 'Timeout evaluating policy PP-03' : undefined,
-  });
+for (let i = 1; i <= 40; i++) {
+  const decision = mockDecisions.find(d => d.id === `dec-${i}`);
+  if (decision) {
+    mockTelemetry.push({
+      id: decision.traceId,
+      timestamp: decision.timestamp,
+      decisionId: decision.id,
+      latencyMs: 45 + Math.random() * 200,
+      outcome: decision.outcome,
+      workspaceId: decision.workspaceId,
+      error: i % 10 === 0 ? 'Timeout evaluating policy' : undefined,
+    });
+  }
 }
 
 export const mockEvidence: Evidence[] = [

@@ -67,7 +67,7 @@ export function DecisionLog() {
 
   const outcomes = ['ALLOW', 'DENY', 'REQUIRE_EVIDENCE', 'ADVISE', 'WARNING'];
   const actors = Array.from(new Set(mockDecisions.map(d => d.actor)));
-  const policyPacks = Array.from(new Set(mockDecisions.flatMap(d => d.policyRefs)));
+  const policyPackIds = Array.from(new Set(mockDecisions.flatMap(d => d.policyRefs)));
 
   return (
     <div className="space-y-6">
@@ -135,14 +135,19 @@ export function DecisionLog() {
             <DropdownMenuTrigger asChild>
               <Button variant={policyFilter ? 'secondary' : 'outline'} size="sm" className="h-7 text-[10px] rounded-full gap-1">
                 <Shield className="w-3 h-3" />
-                {policyFilter || 'Policy Pack'}
+                {policyFilter ? mockPolicyPacks.find(p => p.id === policyFilter)?.name : 'Policy Pack'}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="bg-card border-border text-foreground">
               <DropdownMenuItem onClick={() => setPolicyFilter(null)}>All Policies</DropdownMenuItem>
-              {policyPacks.map(p => (
-                <DropdownMenuItem key={p} onClick={() => setPolicyFilter(p)}>{p}</DropdownMenuItem>
-              ))}
+              {policyPackIds.map(id => {
+                const pack = mockPolicyPacks.find(p => p.id === id);
+                return (
+                  <DropdownMenuItem key={id} onClick={() => setPolicyFilter(id)}>
+                    {pack?.name || id}
+                  </DropdownMenuItem>
+                );
+              })}
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -345,13 +350,13 @@ export function DecisionLog() {
                       Policy Pack References
                     </h4>
                     <div className="space-y-2">
-                      {selectedDecision.policyRefs.map((ref: string, i: number) => {
-                        const pack = mockPolicyPacks.find(p => p.name === ref);
+                      {selectedDecision.policyRefs.map((pId: string, i: number) => {
+                        const pack = mockPolicyPacks.find(p => p.id === pId);
                         return (
-                          <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-surface border border-border hover:border-accent/50 transition-colors cursor-pointer group" onClick={() => navigate(`/policies/${pack?.id || ref.toLowerCase()}`)}>
+                          <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-surface border border-border hover:border-accent/50 transition-colors cursor-pointer group" onClick={() => navigate(`/policies/${pId}`)}>
                             <div className="flex items-center gap-3">
                               <Shield className="w-4 h-4 text-muted-foreground group-hover:text-accent" />
-                              <span className="text-xs font-medium text-foreground/80 group-hover:text-accent">{ref}</span>
+                              <span className="text-xs font-medium text-foreground/80 group-hover:text-accent">{pack?.name || pId}</span>
                             </div>
                             <ChevronRight className="w-4 h-4 text-zinc-700" />
                           </div>

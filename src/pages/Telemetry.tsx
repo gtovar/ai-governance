@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { mockTelemetry, mockDecisions, mockWorkspaces } from '../mockData';
+import { mockTelemetry, mockDecisions, mockWorkspaces, mockPolicyPacks } from '../mockData';
 import { OutcomeBadge } from '../components/Badges';
 import { 
   Activity, 
@@ -363,7 +363,7 @@ export function Telemetry() {
                       {[
                         { step: "Intent Received", time: "0ms", status: "success", detail: `Intent ID: ${relatedDecision?.intentId || 'N/A'}` },
                         { step: "Context Hydration", time: "12ms", status: "success", detail: `Workspace: ${relatedWorkspace?.name || 'Unknown'}` },
-                        { step: "Policy Pack Loading", time: "45ms", status: "success", detail: `Packs: ${relatedDecision?.policyRefs.join(', ') || 'None'}` },
+                        { step: "Policy Pack Loading", time: "45ms", status: "success", detail: `Packs: ${relatedDecision?.policyRefs.map(id => mockPolicyPacks.find(p => p.id === id)?.name || id).join(', ') || 'None'}` },
                         { step: "Rule Evaluation", time: "128ms", status: "success", detail: `${relatedDecision?.policyRefs.length || 0} policy packs evaluated` },
                         { step: "Outcome Generation", time: "142ms", status: "success", detail: `Result: ${selectedTrace.outcome}` },
                         { step: "Log Persistence", time: "156ms", status: "success", detail: `Decision ID: ${selectedTrace.decisionId}` }
