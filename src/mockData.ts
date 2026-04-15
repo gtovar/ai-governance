@@ -1,4 +1,4 @@
-import { Workspace, Checkpoint, Obligation, Decision, PolicyPack, TelemetryTrace } from './types';
+import { Workspace, Checkpoint, Obligation, Decision, PolicyPack, TelemetryTrace, Evidence } from './types';
 
 export const mockWorkspaces: Workspace[] = [
   {
@@ -23,6 +23,7 @@ export const mockWorkspaces: Workspace[] = [
     lastDecisionOutcome: 'DENY',
     riskLevel: 'CRITICAL',
     description: 'Identity and access management service.',
+    blockedReason: 'Critical vulnerability in dependency lib-auth-v2. Missing SOC2 compliance evidence.',
     createdAt: '2024-01-20T11:30:00Z',
   },
   {
@@ -314,3 +315,33 @@ for (let i = 1; i <= 20; i++) {
     error: i % 10 === 0 ? 'Timeout evaluating policy PP-03' : undefined,
   });
 }
+
+export const mockEvidence: Evidence[] = [
+  {
+    id: 'ev-1',
+    obligationId: 'ob-1',
+    title: 'Security Patch Log - April 2024',
+    type: 'LOG',
+    url: '#',
+    uploadedAt: '2024-04-10T10:00:00Z',
+    uploadedBy: 'DevOps Team',
+  },
+  {
+    id: 'ev-2',
+    obligationId: 'ob-2',
+    title: 'Load Test Results - 10k CCU',
+    type: 'REPORT',
+    url: '#',
+    uploadedAt: '2024-04-12T15:30:00Z',
+    uploadedBy: 'QA Team',
+  },
+  {
+    id: 'ev-3',
+    obligationId: 'ob-3',
+    title: 'Penetration Test Report Q2',
+    type: 'REPORT',
+    url: '#',
+    uploadedAt: '2024-04-14T09:00:00Z',
+    uploadedBy: 'Security Team',
+  },
+];

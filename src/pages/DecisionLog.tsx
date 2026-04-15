@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { mockDecisions, mockWorkspaces } from '../mockData';
-import { OutcomeBadge } from '../components/Badges';
+import { mockDecisions, mockWorkspaces, mockCheckpoints, mockObligations } from '../mockData';
+import { OutcomeBadge, SeverityBadge } from '../components/Badges';
 import { 
   FileText, 
   Search, 
@@ -12,7 +12,14 @@ import {
   Info,
   ChevronRight,
   Download,
-  Activity
+  Activity,
+  Shield,
+  CheckCircle2,
+  AlertTriangle,
+  ArrowRight,
+  ExternalLink,
+  User,
+  Layers
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -25,37 +32,78 @@ import {
 } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 
 export function DecisionLog() {
   const [selectedDecision, setSelectedDecision] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [outcomeFilter, setOutcomeFilter] = useState<string | null>(null);
 
-  const filteredDecisions = mockDecisions.filter(d => 
-    d.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    d.traceId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    d.actor.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredDecisions = mockDecisions.filter(d => {
+    const matchesSearch = d.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      d.traceId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      d.actor.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesOutcome = outcomeFilter ? d.outcome === outcomeFilter : true;
+    
+    return matchesSearch && matchesOutcome;
+  });
+
+  const outcomes = ['ALLOW', 'DENY', 'REQUIRE_EVIDENCE', 'ADVISE', 'WARNING'];
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-          <Input 
-            placeholder="Search by Decision ID, Trace, or Actor..." 
-            className="pl-10 bg-surface border-border text-foreground"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+      <div className="flex flex-col space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+            <Input 
+              placeholder="Search by Decision ID, Trace, or Actor..." 
+              className="pl-10 bg-surface border-border text-foreground"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" className="bg-surface border-border text-muted-foreground hover:text-foreground gap-2 text-xs">
+              <Download className="w-3 h-3" />
+              Export Log
+            </Button>
+            <Button className="bg-accent hover:bg-accent/90 text-white text-xs">
+              Manual Evaluation
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" className="bg-surface border-border text-muted-foreground hover:text-foreground gap-2">
-            <Filter className="w-4 h-4" />
-            Advanced Filters
+
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 custom-scrollbar">
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mr-2">Filters:</span>
+          <Button 
+            variant={outcomeFilter === null ? 'secondary' : 'outline'} 
+            size="sm" 
+            className="h-7 text-[10px] rounded-full"
+            onClick={() => setOutcomeFilter(null)}
+          >
+            All Outcomes
           </Button>
-          <Button variant="outline" className="bg-surface border-border text-muted-foreground hover:text-foreground gap-2">
-            <Download className="w-4 h-4" />
-            Export
+          {outcomes.map(outcome => (
+            <Button 
+              key={outcome}
+              variant={outcomeFilter === outcome ? 'secondary' : 'outline'} 
+              size="sm" 
+              className="h-7 text-[10px] rounded-full"
+              onClick={() => setOutcomeFilter(outcome)}
+            >
+              {outcome.replace('_', ' ')}
+            </Button>
+          ))}
+          <Separator orientation="vertical" className="h-4 bg-border mx-2" />
+          <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full gap-1">
+            <Layers className="w-3 h-3" />
+            Policy Pack
+          </Button>
+          <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full gap-1">
+            <User className="w-3 h-3" />
+            Actor
           </Button>
         </div>
       </div>
@@ -65,12 +113,12 @@ export function DecisionLog() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-card/50 border-b border-border">
-                <th className="py-4 px-6 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Decision ID</th>
-                <th className="py-4 px-6 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Timestamp</th>
-                <th className="py-4 px-6 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Workspace</th>
-                <th className="py-4 px-6 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Outcome</th>
-                <th className="py-4 px-6 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Actor</th>
-                <th className="py-4 px-6 text-[10px] font-medium text-muted-foreground uppercase tracking-wider text-right">Trace</th>
+                <th className="py-4 px-6 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Outcome</th>
+                <th className="py-4 px-6 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Decision ID</th>
+                <th className="py-4 px-6 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Workspace</th>
+                <th className="py-4 px-6 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Actor</th>
+                <th className="py-4 px-6 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Timestamp</th>
+                <th className="py-4 px-6 text-[10px] font-bold text-muted-foreground uppercase tracking-wider text-right">Trace</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/50">
@@ -83,6 +131,9 @@ export function DecisionLog() {
                     onClick={() => setSelectedDecision(decision)}
                   >
                     <td className="py-4 px-6">
+                      <OutcomeBadge outcome={decision.outcome} />
+                    </td>
+                    <td className="py-4 px-6">
                       <div className="flex items-center gap-2">
                         <Terminal className="w-3 h-3 text-zinc-600" />
                         <span className="text-sm font-mono text-foreground/80 group-hover:text-accent transition-colors">
@@ -90,24 +141,21 @@ export function DecisionLog() {
                         </span>
                       </div>
                     </td>
-                    <td className="py-4 px-6 text-sm text-muted-foreground font-mono">
-                      {new Date(decision.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                    </td>
                     <td className="py-4 px-6 text-sm font-medium text-foreground">
                       {workspace?.name}
                     </td>
                     <td className="py-4 px-6">
-                      <OutcomeBadge outcome={decision.outcome} />
-                    </td>
-                    <td className="py-4 px-6">
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <div className="w-5 h-5 rounded bg-card flex items-center justify-center text-[10px]">
+                        <div className="w-5 h-5 rounded bg-card flex items-center justify-center text-[10px] border border-border">
                           {decision.actor[0].toUpperCase()}
                         </div>
-                        {decision.actor}
+                        <span className="text-xs">{decision.actor}</span>
                       </div>
                     </td>
-                    <td className="py-4 px-6 text-sm text-muted-foreground text-right font-mono">
+                    <td className="py-4 px-6 text-xs text-muted-foreground font-mono">
+                      {new Date(decision.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </td>
+                    <td className="py-4 px-6 text-xs text-muted-foreground text-right font-mono">
                       {decision.traceId}
                     </td>
                   </tr>
@@ -125,87 +173,143 @@ export function DecisionLog() {
             <div className="flex flex-col h-full">
               <SheetHeader className="p-6 bg-surface border-b border-border">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Decision Inspector</span>
+                  <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Forensic Decision Inspector</span>
                   <OutcomeBadge outcome={selectedDecision.outcome} />
                 </div>
                 <SheetTitle className="text-2xl font-bold text-foreground flex items-center gap-3">
                   {selectedDecision.id}
                 </SheetTitle>
-                <SheetDescription className="text-muted-foreground font-mono text-xs">
+                <SheetDescription className="text-muted-foreground font-mono text-xs flex items-center gap-2">
+                  <Activity className="w-3 h-3" />
                   Trace: {selectedDecision.traceId} • {new Date(selectedDecision.timestamp).toISOString()}
                 </SheetDescription>
               </SheetHeader>
 
               <ScrollArea className="flex-1 p-6">
                 <div className="space-y-8">
-                  {/* Summary Section */}
+                  {/* Human Readable Summary */}
                   <section className="space-y-3">
-                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                    <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                       <Info className="w-3 h-3" />
-                      Decision Summary
+                      Executive Summary
                     </h4>
-                    <div className="p-4 rounded-lg bg-surface border border-border space-y-3">
-                      <p className="text-sm text-foreground/80 leading-relaxed">
-                        The Governance Kernel evaluated a <span className="text-accent font-mono">{selectedDecision.payload.action}</span> intent 
-                        from <span className="text-foreground font-medium">{selectedDecision.actor}</span>. 
-                        The outcome was <span className="font-bold text-foreground">{selectedDecision.outcome}</span> based on {selectedDecision.reasonCodes.length} policy evaluations.
+                    <div className={cn(
+                      "p-4 rounded-lg border",
+                      selectedDecision.outcome === 'DENY' ? 'bg-error/5 border-error/20' : 'bg-surface border-border'
+                    )}>
+                      <p className="text-sm text-foreground leading-relaxed">
+                        {selectedDecision.outcome === 'DENY' ? (
+                          <>
+                            Action <span className="font-bold">BLOCKED</span>. The request to <span className="text-error font-mono">{selectedDecision.payload.action}</span> was rejected because it violates critical security policies.
+                          </>
+                        ) : selectedDecision.outcome === 'ALLOW' ? (
+                          <>
+                            Action <span className="font-bold text-success">ALLOWED</span>. All policy checks passed successfully for the <span className="text-accent font-mono">{selectedDecision.payload.action}</span> intent.
+                          </>
+                        ) : (
+                          <>
+                            Action <span className="font-bold text-warning">PENDING</span>. Additional evidence or manual review is required to proceed with <span className="text-warning font-mono">{selectedDecision.payload.action}</span>.
+                          </>
+                        )}
                       </p>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="mt-4 flex flex-wrap gap-2">
                         {selectedDecision.reasonCodes.map((code: string, i: number) => (
-                          <span key={i} className="px-2 py-0.5 rounded bg-card text-[10px] font-mono text-muted-foreground border border-border">
+                          <Badge key={i} variant="outline" className="bg-card text-[10px] font-mono py-0 h-5 border-border">
                             {code}
-                          </span>
+                          </Badge>
                         ))}
                       </div>
                     </div>
                   </section>
 
+                  {/* Decision Context */}
+                  <section className="space-y-3">
+                    <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                      <Layers className="w-3 h-3" />
+                      Decision Context
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="p-3 rounded-lg bg-surface border border-border space-y-1">
+                        <p className="text-[9px] text-muted-foreground uppercase">Workspace</p>
+                        <p className="text-xs font-bold text-foreground flex items-center gap-1">
+                          {mockWorkspaces.find(w => w.id === selectedDecision.workspaceId)?.name}
+                          <ExternalLink className="w-2 h-2 text-muted-foreground" />
+                        </p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-surface border border-border space-y-1">
+                        <p className="text-[9px] text-muted-foreground uppercase">Actor</p>
+                        <p className="text-xs font-bold text-foreground">{selectedDecision.actor}</p>
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* Required Evidence / Next Actions */}
+                  {(selectedDecision.outcome === 'DENY' || selectedDecision.outcome === 'REQUIRE_EVIDENCE') && (
+                    <section className="space-y-3">
+                      <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                        <Shield className="w-3 h-3 text-warning" />
+                        Required Remediation
+                      </h4>
+                      <div className="p-4 rounded-lg bg-warning/5 border border-warning/20 space-y-3">
+                        <p className="text-xs font-bold text-warning">Next Recommended Action:</p>
+                        <p className="text-xs text-foreground/80">
+                          {selectedDecision.outcome === 'DENY' 
+                            ? "Resolve critical vulnerabilities and re-submit the intent for evaluation."
+                            : "Upload the missing evidence documents to satisfy the pending obligations."}
+                        </p>
+                        <div className="space-y-2 pt-2">
+                          {selectedDecision.obligationIds.map((obId: string) => {
+                            const ob = mockObligations.find(o => o.id === obId);
+                            return (
+                              <div key={obId} className="flex items-center justify-between p-2 rounded bg-card border border-border">
+                                <span className="text-[10px] font-medium text-foreground">{ob?.title || obId}</span>
+                                <ArrowRight className="w-3 h-3 text-muted-foreground" />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </section>
+                  )}
+
                   {/* Intent Payload */}
                   <section className="space-y-3">
-                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                    <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                       <Code className="w-3 h-3" />
-                      Write Intent Payload
+                      Raw Write Intent
                     </h4>
-                    <div className="p-4 rounded-lg bg-card border border-border font-mono text-xs text-accent overflow-x-auto">
+                    <div className="p-4 rounded-lg bg-card border border-border font-mono text-[10px] text-accent overflow-x-auto">
                       <pre>{JSON.stringify(selectedDecision.payload, null, 2)}</pre>
                     </div>
                   </section>
 
                   {/* Policy References */}
                   <section className="space-y-3">
-                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                    <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                       <Link2 className="w-3 h-3" />
-                      Policy References
+                      Policy Pack References
                     </h4>
                     <div className="space-y-2">
                       {selectedDecision.policyRefs.map((ref: string, i: number) => (
                         <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-surface border border-border hover:border-accent/50 transition-colors cursor-pointer group">
-                          <span className="text-sm font-medium text-foreground/80 group-hover:text-accent">{ref}</span>
+                          <div className="flex items-center gap-3">
+                            <Shield className="w-4 h-4 text-muted-foreground group-hover:text-accent" />
+                            <span className="text-xs font-medium text-foreground/80 group-hover:text-accent">{ref}</span>
+                          </div>
                           <ChevronRight className="w-4 h-4 text-zinc-700" />
                         </div>
                       ))}
-                    </div>
-                  </section>
-
-                  {/* Context */}
-                  <section className="space-y-3">
-                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                      <Activity className="w-3 h-3" />
-                      Evaluation Context
-                    </h4>
-                    <div className="p-4 rounded-lg bg-surface border border-border font-mono text-xs text-muted-foreground">
-                      <pre>{JSON.stringify(selectedDecision.context, null, 2)}</pre>
                     </div>
                   </section>
                 </div>
               </ScrollArea>
 
               <div className="p-6 border-t border-border bg-card/30 flex gap-3">
-                <Button className="flex-1 bg-accent hover:bg-accent/90 text-white">
-                  Correlate Trace
+                <Button className="flex-1 bg-accent hover:bg-accent/90 text-white text-xs h-9">
+                  Correlate Telemetry Trace
                 </Button>
-                <Button variant="outline" className="flex-1 bg-surface border-border text-muted-foreground hover:text-foreground">
-                  View Workspace
+                <Button variant="outline" className="flex-1 bg-surface border-border text-muted-foreground hover:text-foreground text-xs h-9">
+                  View Workspace Detail
                 </Button>
               </div>
             </div>
@@ -214,4 +318,8 @@ export function DecisionLog() {
       </Sheet>
     </div>
   );
+}
+
+function cn(...inputs: any[]) {
+  return inputs.filter(Boolean).join(' ');
 }

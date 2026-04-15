@@ -14,6 +14,7 @@ export interface Workspace {
   lastDecisionOutcome: DecisionOutcome;
   riskLevel: Severity;
   description: string;
+  blockedReason?: string;
   createdAt: string;
 }
 
