@@ -17,7 +17,15 @@ import {
   CheckCircle2,
   Lock,
   History,
-  Info
+  Info,
+  ShieldAlert,
+  Clock,
+  Paperclip,
+  Zap,
+  AlertTriangle,
+  ArrowRight,
+  Download,
+  Eye
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -31,20 +39,30 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
 
 export function Workspaces() {
+  const { id } = useParams();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(null);
 
   const filteredWorkspaces = mockWorkspaces.filter(ws => 
     ws.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     ws.owner.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const selectedWorkspace = mockWorkspaces.find(ws => ws.id === selectedWorkspaceId);
+  const selectedWorkspace = mockWorkspaces.find(ws => ws.id === id);
 
   if (selectedWorkspace) {
-    return <WorkspaceDetail workspace={selectedWorkspace} onBack={() => setSelectedWorkspaceId(null)} />;
+    return <WorkspaceDetail workspace={selectedWorkspace} onBack={() => navigate('/workspaces')} />;
   }
 
   return (
@@ -75,7 +93,7 @@ export function Workspaces() {
           <Card 
             key={ws.id} 
             className="bg-surface border-border hover:border-accent/50 transition-all duration-300 group cursor-pointer"
-            onClick={() => setSelectedWorkspaceId(ws.id)}
+            onClick={() => navigate(`/workspaces/${ws.id}`)}
           >
             <CardHeader className="pb-4">
               <div className="flex items-start justify-between">
@@ -93,7 +111,7 @@ export function Workspaces() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="bg-card border-border text-foreground">
-                    <DropdownMenuItem>View Details</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate(`/workspaces/${ws.id}`)}>View Details</DropdownMenuItem>
                     <DropdownMenuItem>Edit Workspace</DropdownMenuItem>
                     <DropdownMenuItem className="text-error">Archive</DropdownMenuItem>
                   </DropdownMenuContent>
@@ -149,11 +167,17 @@ export function Workspaces() {
 }
 
 function WorkspaceDetail({ workspace, onBack }: { workspace: any, onBack: () => void }) {
+  const navigate = useNavigate();
   const activeCheckpoint = mockCheckpoints.find(c => c.id === workspace.activeCheckpointId);
+  const workspaceCheckpoints = mockCheckpoints.filter(c => c.workspaceId === workspace.id);
   const obligations = mockObligations.filter(o => o.workspaceId === workspace.id);
   const decisions = mockDecisions.filter(d => d.workspaceId === workspace.id);
   const telemetry = mockTelemetry.filter(t => t.workspaceId === workspace.id);
   const evidence = mockEvidence.filter(e => obligations.some(o => o.id === e.obligationId));
+
+  const openObligations = obligations.filter(o => o.status === 'OPEN');
+  const satisfiedObligations = obligations.filter(o => o.status === 'SATISFIED');
+  const evidenceCoverage = obligations.length > 0 ? Math.round((satisfiedObligations.length / obligations.length) * 100) : 0;
 
   return (
     <div className="space-y-6">
@@ -207,10 +231,12 @@ function WorkspaceDetail({ workspace, onBack }: { workspace: any, onBack: () => 
                     <div className="p-4 rounded-lg bg-card border border-border space-y-2">
                       <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Evidence Coverage</p>
                       <div className="flex items-end justify-between">
-                        <span className="text-2xl font-bold text-foreground">65%</span>
-                        <span className="text-[10px] text-warning">Needs Review</span>
+                        <span className="text-2xl font-bold text-foreground">{evidenceCoverage}%</span>
+                        <span className={cn("text-[10px]", evidenceCoverage < 80 ? "text-warning" : "text-success")}>
+                          {evidenceCoverage < 80 ? "Needs Review" : "Healthy"}
+                        </span>
                       </div>
-                      <Progress value={65} className="h-1 bg-background" />
+                      <Progress value={evidenceCoverage} className="h-1 bg-background" />
                     </div>
                     <div className="p-4 rounded-lg bg-card border border-border space-y-2">
                       <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Policy Compliance</p>
@@ -223,42 +249,87 @@ function WorkspaceDetail({ workspace, onBack }: { workspace: any, onBack: () => 
                     <div className="p-4 rounded-lg bg-card border border-border space-y-2">
                       <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Risk Exposure</p>
                       <div className="flex items-end justify-between">
-                        <span className="text-2xl font-bold text-foreground">Medium</span>
+                        <span className="text-2xl font-bold text-foreground">{workspace.riskLevel}</span>
                         <span className="text-[10px] text-muted-foreground">Stable</span>
                       </div>
                       <div className="h-1 w-full bg-background rounded-full overflow-hidden">
-                        <div className="h-full bg-warning w-1/2" />
+                        <div className={cn(
+                          "h-full w-1/2",
+                          workspace.riskLevel === 'CRITICAL' ? 'bg-error' : workspace.riskLevel === 'HIGH' ? 'bg-error/70' : workspace.riskLevel === 'MEDIUM' ? 'bg-warning' : 'bg-success'
+                        )} />
                       </div>
                     </div>
                   </div>
 
-                  {workspace.status === 'BLOCKED' && (
-                    <div className="p-4 rounded-lg bg-error/10 border border-error/20 flex items-start gap-3">
-                      <Shield className="w-5 h-5 text-error mt-0.5" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {workspace.status === 'BLOCKED' && (
+                      <div className="p-4 rounded-lg bg-error/10 border border-error/20 flex items-start gap-3">
+                        <ShieldAlert className="w-5 h-5 text-error mt-0.5" />
+                        <div>
+                          <p className="text-sm font-bold text-error">Blocked-by-Policy Summary</p>
+                          <p className="text-xs text-error/80 mt-1">{workspace.blockedReason}</p>
+                          <Button size="sm" variant="outline" className="mt-3 border-error/30 text-error hover:bg-error/10 h-7 text-[10px]" onClick={() => navigate('/policies')}>
+                            View Policy Violation
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {openObligations.length > 0 && (
+                      <div className="p-4 rounded-lg bg-warning/10 border border-warning/20 flex items-start gap-3">
+                        <AlertTriangle className="w-5 h-5 text-warning mt-0.5" />
+                        <div>
+                          <p className="text-sm font-bold text-warning">Missing Evidence Summary</p>
+                          <p className="text-xs text-warning/80 mt-1">
+                            {openObligations.length} obligations are missing required evidence items.
+                          </p>
+                          <Button size="sm" variant="outline" className="mt-3 border-warning/30 text-warning hover:bg-warning/10 h-7 text-[10px]" onClick={() => navigate('/obligations')}>
+                            Review Obligations
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="p-4 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-accent">
+                        <Zap className="w-4 h-4" />
+                      </div>
                       <div>
-                        <p className="text-sm font-bold text-error">Workspace Blocked by Policy</p>
-                        <p className="text-xs text-error/80 mt-1">{workspace.blockedReason}</p>
-                        <Button size="sm" variant="outline" className="mt-3 border-error/30 text-error hover:bg-error/10 h-7 text-[10px]">
-                          View Policy Violation
-                        </Button>
+                        <p className="text-sm font-bold text-foreground">Next Recommended Action</p>
+                        <p className="text-xs text-muted-foreground">
+                          {workspace.status === 'BLOCKED' 
+                            ? "Resolve policy violations to unblock workspace." 
+                            : activeCheckpoint 
+                              ? `Complete evidence for ${activeCheckpoint.name}.` 
+                              : "Run a new governance evaluation."}
+                        </p>
                       </div>
                     </div>
-                  )}
+                    <Button size="sm" className="bg-accent hover:bg-accent/90 text-white h-8 text-xs gap-2">
+                      Take Action
+                      <ArrowRight className="w-3 h-3" />
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
 
               {/* Recent Activity */}
               <Card className="bg-surface border-border">
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="text-sm font-bold flex items-center gap-2">
                     <History className="w-4 h-4 text-accent" />
                     Recent Decisions
                   </CardTitle>
+                  <Button variant="ghost" className="text-accent text-[10px] h-6 p-0 hover:bg-transparent" onClick={() => navigate('/decision-log')}>
+                    View All
+                  </Button>
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="divide-y divide-border">
                     {decisions.slice(0, 5).map((d) => (
-                      <div key={d.id} className="p-4 flex items-center justify-between hover:bg-card/30 transition-colors cursor-pointer group">
+                      <div key={d.id} className="p-4 flex items-center justify-between hover:bg-card/30 transition-colors cursor-pointer group" onClick={() => navigate(`/decision-log/${d.id}`)}>
                         <div className="flex items-center gap-4">
                           <OutcomeBadge outcome={d.outcome} />
                           <div>
@@ -280,8 +351,13 @@ function WorkspaceDetail({ workspace, onBack }: { workspace: any, onBack: () => 
             <div className="space-y-6">
               {/* Active Checkpoint */}
               <Card className="bg-surface border-border">
-                <CardHeader className="bg-card/30 border-b border-border">
+                <CardHeader className="bg-card/30 border-b border-border flex flex-row items-center justify-between">
                   <CardTitle className="text-sm font-bold">Active Checkpoint</CardTitle>
+                  {activeCheckpoint && (
+                    <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-accent" onClick={() => navigate(`/checkpoints/${activeCheckpoint.id}`)}>
+                      <ExternalLink className="w-3 h-3" />
+                    </Button>
+                  )}
                 </CardHeader>
                 <CardContent className="p-4 space-y-4">
                   {activeCheckpoint ? (
@@ -308,12 +384,17 @@ function WorkspaceDetail({ workspace, onBack }: { workspace: any, onBack: () => 
                           ))}
                         </div>
                       </div>
-                      <Button className="w-full bg-accent hover:bg-accent/90 text-white text-xs h-8">
+                      <Button className="w-full bg-accent hover:bg-accent/90 text-white text-xs h-8" onClick={() => navigate(`/checkpoints/${activeCheckpoint.id}`)}>
                         Manage Checkpoint
                       </Button>
                     </div>
                   ) : (
-                    <p className="text-xs text-muted-foreground italic">No active checkpoint</p>
+                    <div className="text-center py-6 space-y-3">
+                      <p className="text-xs text-muted-foreground italic">No active checkpoint</p>
+                      <Button variant="outline" className="w-full border-border text-xs h-8" onClick={() => navigate('/checkpoints')}>
+                        Open New Checkpoint
+                      </Button>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -330,6 +411,10 @@ function WorkspaceDetail({ workspace, onBack }: { workspace: any, onBack: () => 
                       <span className="text-xs font-medium text-foreground">{workspace.owner}</span>
                     </div>
                     <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Type</span>
+                      <Badge variant="outline" className="text-[9px] font-mono uppercase tracking-tighter">{workspace.type}</Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
                       <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Created</span>
                       <span className="text-xs font-medium text-foreground">{new Date(workspace.createdAt).toLocaleDateString()}</span>
                     </div>
@@ -342,8 +427,14 @@ function WorkspaceDetail({ workspace, onBack }: { workspace: any, onBack: () => 
                   <div className="space-y-2">
                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Active Obligations</p>
                     <div className="flex flex-wrap gap-2">
-                      <div className="px-2 py-1 rounded bg-card border border-border text-[10px] text-foreground">Security: 2</div>
-                      <div className="px-2 py-1 rounded bg-card border border-border text-[10px] text-foreground">Compliance: 1</div>
+                      <div className="px-2 py-1 rounded bg-card border border-border text-[10px] text-foreground flex items-center gap-1.5">
+                        <Shield className="w-3 h-3 text-accent" />
+                        Security: {obligations.filter(o => o.type === 'SECURITY').length}
+                      </div>
+                      <div className="px-2 py-1 rounded bg-card border border-border text-[10px] text-foreground flex items-center gap-1.5">
+                        <Lock className="w-3 h-3 text-accent" />
+                        Compliance: {obligations.filter(o => o.type === 'COMPLIANCE').length}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -353,47 +444,306 @@ function WorkspaceDetail({ workspace, onBack }: { workspace: any, onBack: () => 
         </TabsContent>
 
         <TabsContent value="checkpoints">
-          <Card className="bg-surface border-border">
-            <CardContent className="p-6">
-              <p className="text-sm text-muted-foreground">Checkpoint history and active gates for this workspace.</p>
-              {/* Checkpoint list would go here */}
-            </CardContent>
+          <Card className="bg-surface border-border overflow-hidden">
+            <Table>
+              <TableHeader className="bg-card/30">
+                <TableRow className="border-border hover:bg-transparent">
+                  <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] py-4">Checkpoint Name</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] py-4">Status</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] py-4">Readiness</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] py-4">Responsible</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] py-4">Opened At</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] py-4 text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {workspaceCheckpoints.map((cp) => {
+                  const cpObligations = mockObligations.filter(o => cp.obligationIds.includes(o.id));
+                  const satisfiedCount = cpObligations.filter(o => o.status === 'SATISFIED').length;
+                  const readiness = cpObligations.length > 0 ? Math.round((satisfiedCount / cpObligations.length) * 100) : 0;
+
+                  return (
+                    <TableRow key={cp.id} className="border-border hover:bg-card/30 transition-colors group cursor-pointer" onClick={() => navigate(`/checkpoints/${cp.id}`)}>
+                      <TableCell className="py-4">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-xs font-bold text-foreground group-hover:text-accent transition-colors">{cp.name}</span>
+                          <span className="text-[10px] text-muted-foreground font-mono">{cp.id}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={cp.status} />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-1.5 bg-card rounded-full overflow-hidden">
+                            <div className={cn("h-full", readiness === 100 ? "bg-success" : "bg-accent")} style={{ width: `${readiness}%` }} />
+                          </div>
+                          <span className="text-[10px] font-bold text-foreground">{readiness}%</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-xs text-foreground/80">{cp.responsible}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-xs text-muted-foreground">{new Date(cp.openedAt).toLocaleDateString()}</span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           </Card>
         </TabsContent>
 
         <TabsContent value="obligations">
-          <Card className="bg-surface border-border">
-            <CardContent className="p-6">
-              <p className="text-sm text-muted-foreground">Detailed view of all compliance and security obligations.</p>
-              {/* Obligations list would go here */}
-            </CardContent>
+          <Card className="bg-surface border-border overflow-hidden">
+            <Table>
+              <TableHeader className="bg-card/30">
+                <TableRow className="border-border hover:bg-transparent">
+                  <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] py-4">Obligation</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] py-4">Severity</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] py-4">Status</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] py-4">Evidence</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] py-4">Owner</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] py-4">Due Date</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] py-4 text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {obligations.map((ob) => {
+                  const obEvidence = mockEvidence.filter(e => e.obligationId === ob.id);
+                  const isOverdue = new Date(ob.dueDate) < new Date() && ob.status === 'OPEN';
+
+                  return (
+                    <TableRow key={ob.id} className="border-border hover:bg-card/30 transition-colors group cursor-pointer" onClick={() => navigate(`/obligations/${ob.id}`)}>
+                      <TableCell className="py-4">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-xs font-bold text-foreground group-hover:text-accent transition-colors">{ob.title}</span>
+                          <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{ob.type}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <SeverityBadge severity={ob.severity} />
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={ob.status} />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <Paperclip className="w-3 h-3 text-muted-foreground" />
+                          <span className="text-xs text-foreground/80">{obEvidence.length} items</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-xs text-foreground/80">{ob.owner}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className={cn("text-xs", isOverdue ? "text-error font-bold" : "text-muted-foreground")}>
+                          {new Date(ob.dueDate).toLocaleDateString()}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           </Card>
         </TabsContent>
 
         <TabsContent value="evidence">
-          <Card className="bg-surface border-border">
-            <CardContent className="p-6">
-              <p className="text-sm text-muted-foreground">Evidence repository for governance validation.</p>
-              {/* Evidence list would go here */}
-            </CardContent>
-          </Card>
+          <div className="space-y-6">
+            {obligations.map((ob) => {
+              const obEvidence = mockEvidence.filter(e => e.obligationId === ob.id);
+              if (obEvidence.length === 0) return null;
+
+              return (
+                <Card key={ob.id} className="bg-surface border-border overflow-hidden">
+                  <CardHeader className="bg-card/30 border-b border-border py-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-4 h-4 text-accent" />
+                        <CardTitle className="text-xs font-bold">{ob.title}</CardTitle>
+                        <Badge variant="outline" className="text-[9px] font-mono">{ob.id}</Badge>
+                      </div>
+                      <Button variant="ghost" size="sm" className="h-7 text-[10px] text-accent hover:text-accent/80" onClick={() => navigate(`/obligations/${ob.id}`)}>
+                        View Obligation
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <Table>
+                      <TableBody>
+                        {obEvidence.map((ev) => (
+                          <TableRow key={ev.id} className="border-border hover:bg-card/20 transition-colors">
+                            <TableCell className="py-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded bg-card border border-border flex items-center justify-center text-muted-foreground">
+                                  <FileText className="w-4 h-4" />
+                                </div>
+                                <div>
+                                  <p className="text-xs font-bold text-foreground">{ev.title}</p>
+                                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{ev.type}</p>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-col">
+                                <span className="text-[10px] text-muted-foreground uppercase font-bold">Uploaded By</span>
+                                <span className="text-xs text-foreground/80">{ev.uploadedBy}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-col">
+                                <span className="text-[10px] text-muted-foreground uppercase font-bold">Date</span>
+                                <span className="text-xs text-foreground/80">{new Date(ev.uploadedAt).toLocaleDateString()}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                                  <Download className="w-4 h-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              );
+            })}
+            {evidence.length === 0 && (
+              <Card className="bg-surface border-border border-dashed">
+                <CardContent className="p-12 flex flex-col items-center justify-center text-center space-y-4">
+                  <div className="w-12 h-12 rounded-full bg-card flex items-center justify-center text-muted-foreground border border-border">
+                    <FileText className="w-6 h-6" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-bold text-foreground">No Evidence Collected</p>
+                    <p className="text-xs text-muted-foreground">This workspace has no evidence items uploaded yet.</p>
+                  </div>
+                  <Button className="bg-accent hover:bg-accent/90 text-white text-xs h-9">
+                    Upload First Item
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </TabsContent>
 
         <TabsContent value="decisions">
-          <Card className="bg-surface border-border">
-            <CardContent className="p-6">
-              <p className="text-sm text-muted-foreground">Full decision history for this workspace.</p>
-              {/* Decisions list would go here */}
-            </CardContent>
+          <Card className="bg-surface border-border overflow-hidden">
+            <Table>
+              <TableHeader className="bg-card/30">
+                <TableRow className="border-border hover:bg-transparent">
+                  <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] py-4">Outcome</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] py-4">Action / Intent</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] py-4">Actor</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] py-4">Policies</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] py-4">Timestamp</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] py-4 text-right">Inspector</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {decisions.map((d) => (
+                  <TableRow key={d.id} className="border-border hover:bg-card/30 transition-colors group cursor-pointer" onClick={() => navigate(`/decision-log/${d.id}`)}>
+                    <TableCell className="py-4">
+                      <OutcomeBadge outcome={d.outcome} />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs font-bold text-foreground group-hover:text-accent transition-colors">{d.payload.action || 'System Eval'}</span>
+                        <span className="text-[10px] text-muted-foreground font-mono">{d.intentId}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-xs text-foreground/80">{d.actor}</span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {d.policyRefs.map((p, i) => (
+                          <Badge key={i} variant="secondary" className="text-[8px] px-1 py-0 h-4">{p}</Badge>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-xs text-muted-foreground">{new Date(d.timestamp).toLocaleString()}</span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                        <ExternalLink className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </Card>
         </TabsContent>
 
         <TabsContent value="telemetry">
-          <Card className="bg-surface border-border">
-            <CardContent className="p-6">
-              <p className="text-sm text-muted-foreground">Correlated telemetry traces for evaluation flows.</p>
-              {/* Telemetry list would go here */}
-            </CardContent>
+          <Card className="bg-surface border-border overflow-hidden">
+            <Table>
+              <TableHeader className="bg-card/30">
+                <TableRow className="border-border hover:bg-transparent">
+                  <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] py-4">Trace ID</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] py-4">Outcome</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] py-4">Latency</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] py-4">Status</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] py-4">Timestamp</TableHead>
+                  <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] py-4 text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {telemetry.map((t) => (
+                  <TableRow key={t.id} className="border-border hover:bg-card/30 transition-colors group cursor-pointer" onClick={() => navigate(`/telemetry/${t.id}`)}>
+                    <TableCell className="py-4">
+                      <span className="text-xs font-mono text-foreground group-hover:text-accent transition-colors">{t.id}</span>
+                    </TableCell>
+                    <TableCell>
+                      <OutcomeBadge outcome={t.outcome} />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div className="w-12 h-1 bg-card rounded-full overflow-hidden">
+                          <div className={cn("h-full", t.latencyMs > 200 ? "bg-error" : t.latencyMs > 100 ? "bg-warning" : "bg-success")} style={{ width: `${Math.min(100, (t.latencyMs / 300) * 100)}%` }} />
+                        </div>
+                        <span className="text-[10px] font-mono text-foreground">{Math.round(t.latencyMs)}ms</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {t.error ? (
+                        <Badge variant="outline" className="text-[8px] border-error/30 text-error bg-error/5">ERROR</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[8px] border-success/30 text-success bg-success/5">SUCCESS</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-xs text-muted-foreground">{new Date(t.timestamp).toLocaleString()}</span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </Card>
         </TabsContent>
       </Tabs>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { mockTelemetry, mockDecisions, mockWorkspaces } from '../mockData';
 import { OutcomeBadge } from '../components/Badges';
@@ -44,9 +44,11 @@ import {
 } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { useParams, useNavigate } from 'react-router-dom';
 
 export function Telemetry() {
-  const [selectedTrace, setSelectedTrace] = useState<any>(null);
+  const { id } = useParams();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
 
   const avgLatency = Math.round(mockTelemetry.reduce((acc, t) => acc + t.latencyMs, 0) / mockTelemetry.length);
@@ -62,6 +64,10 @@ export function Telemetry() {
     t.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
     t.decisionId.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const selectedTrace = mockTelemetry.find(t => t.id === id);
+  const relatedDecision = selectedTrace ? mockDecisions.find(d => d.id === selectedTrace.decisionId) : null;
+  const relatedWorkspace = selectedTrace ? mockWorkspaces.find(w => w.id === selectedTrace.workspaceId) : null;
 
   return (
     <div className="space-y-8">
@@ -240,7 +246,7 @@ export function Telemetry() {
                 <tr 
                   key={trace.id} 
                   className="hover:bg-card/30 transition-colors group cursor-pointer"
-                  onClick={() => setSelectedTrace(trace)}
+                  onClick={() => navigate(`/telemetry/${trace.id}`)}
                 >
                   <td className="py-4 px-6 text-xs font-mono text-muted-foreground group-hover:text-accent transition-colors">
                     {trace.id}
@@ -275,7 +281,7 @@ export function Telemetry() {
       </Card>
 
       {/* Trace Inspector Sheet */}
-      <Sheet open={!!selectedTrace} onOpenChange={() => setSelectedTrace(null)}>
+      <Sheet open={!!selectedTrace} onOpenChange={(open) => !open && navigate('/telemetry')}>
         <SheetContent className="w-full sm:max-w-xl bg-background border-l border-border text-foreground p-0">
           {selectedTrace && (
             <div className="flex flex-col h-full">
@@ -322,7 +328,7 @@ export function Telemetry() {
                       Correlated Entities
                     </h4>
                     <div className="space-y-2">
-                      <div className="p-3 rounded-lg bg-card border border-border flex items-center justify-between group cursor-pointer hover:border-accent/50 transition-colors">
+                      <div className="p-3 rounded-lg bg-card border border-border flex items-center justify-between group cursor-pointer hover:border-accent/50 transition-colors" onClick={() => navigate(`/decision-log/${selectedTrace.decisionId}`)}>
                         <div className="flex items-center gap-3">
                           <Terminal className="w-4 h-4 text-muted-foreground group-hover:text-accent" />
                           <div>
@@ -332,7 +338,7 @@ export function Telemetry() {
                         </div>
                         <ArrowUpRight className="w-4 h-4 text-zinc-700 group-hover:text-accent" />
                       </div>
-                      <div className="p-3 rounded-lg bg-card border border-border flex items-center justify-between group cursor-pointer hover:border-accent/50 transition-colors">
+                      <div className="p-3 rounded-lg bg-card border border-border flex items-center justify-between group cursor-pointer hover:border-accent/50 transition-colors" onClick={() => navigate(`/workspaces/${selectedTrace.workspaceId}`)}>
                         <div className="flex items-center gap-3">
                           <Shield className="w-4 h-4 text-muted-foreground group-hover:text-accent" />
                           <div>
@@ -351,22 +357,25 @@ export function Telemetry() {
                   <section className="space-y-3">
                     <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                       <Activity className="w-3 h-3" />
-                      Kernel Evaluation Steps
+                      Kernel Evaluation Flow
                     </h4>
                     <div className="space-y-0 border-l border-border ml-2 pl-6">
                       {[
-                        { step: "Intent Received", time: "0ms", status: "success" },
-                        { step: "Context Hydration", time: "12ms", status: "success" },
-                        { step: "Policy Pack Loading", time: "45ms", status: "success" },
-                        { step: "Rule Evaluation", time: "128ms", status: "success" },
-                        { step: "Outcome Generation", time: "142ms", status: "success" },
-                        { step: "Log Persistence", time: "156ms", status: "success" }
+                        { step: "Intent Received", time: "0ms", status: "success", detail: `Intent ID: ${relatedDecision?.intentId || 'N/A'}` },
+                        { step: "Context Hydration", time: "12ms", status: "success", detail: `Workspace: ${relatedWorkspace?.name || 'Unknown'}` },
+                        { step: "Policy Pack Loading", time: "45ms", status: "success", detail: `Packs: ${relatedDecision?.policyRefs.join(', ') || 'None'}` },
+                        { step: "Rule Evaluation", time: "128ms", status: "success", detail: `${relatedDecision?.policyRefs.length || 0} policy packs evaluated` },
+                        { step: "Outcome Generation", time: "142ms", status: "success", detail: `Result: ${selectedTrace.outcome}` },
+                        { step: "Log Persistence", time: "156ms", status: "success", detail: `Decision ID: ${selectedTrace.decisionId}` }
                       ].map((step, i) => (
                         <div key={i} className="relative pb-6 last:pb-0">
                           <div className="absolute -left-[31px] top-1 w-2.5 h-2.5 rounded-full bg-accent border-2 border-background" />
-                          <div className="flex items-center justify-between">
-                            <p className="text-xs font-medium text-foreground">{step.step}</p>
-                            <span className="text-[10px] font-mono text-muted-foreground">+{step.time}</span>
+                          <div className="flex flex-col">
+                            <div className="flex items-center justify-between">
+                              <p className="text-xs font-bold text-foreground">{step.step}</p>
+                              <span className="text-[10px] font-mono text-muted-foreground">+{step.time}</span>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">{step.detail}</p>
                           </div>
                         </div>
                       ))}
@@ -387,7 +396,7 @@ export function Telemetry() {
               </ScrollArea>
 
               <div className="p-6 border-t border-border bg-card/30 flex gap-3">
-                <Button className="flex-1 bg-accent hover:bg-accent/90 text-white text-xs h-9">
+                <Button className="flex-1 bg-accent hover:bg-accent/90 text-white text-xs h-9" onClick={() => navigate('/decision-log')}>
                   View Full Decision Log
                 </Button>
                 <Button variant="outline" className="flex-1 bg-surface border-border text-muted-foreground hover:text-foreground text-xs h-9">

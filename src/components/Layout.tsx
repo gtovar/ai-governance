@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
+import { NavLink, useLocation, Link } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Briefcase, 
@@ -9,42 +10,33 @@ import {
   ShieldCheck, 
   Activity, 
   Settings,
-  ChevronRight,
-  Menu,
-  X,
   Search,
-  Bell,
-  User
+  Bell
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
-
 import { Badge } from '@/components/ui/badge';
 
-interface SidebarProps {
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
-}
-
 const navItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, section: 'Operations' },
-  { id: 'workspaces', label: 'Workspaces', icon: Briefcase, section: 'Operations' },
-  { id: 'checkpoints', label: 'Checkpoints', icon: CheckCircle2, section: 'Governance' },
-  { id: 'obligations', label: 'Obligations', icon: ShieldAlert, section: 'Governance' },
-  { id: 'decision-log', label: 'Decision Log', icon: FileText, section: 'Governance' },
-  { id: 'policies', label: 'Policies', icon: ShieldCheck, section: 'System' },
-  { id: 'telemetry', label: 'Telemetry', icon: Activity, section: 'System' },
-  { id: 'settings', label: 'Settings', icon: Settings, section: 'System' },
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, section: 'Operations', path: '/dashboard' },
+  { id: 'workspaces', label: 'Workspaces', icon: Briefcase, section: 'Operations', path: '/workspaces' },
+  { id: 'checkpoints', label: 'Checkpoints', icon: CheckCircle2, section: 'Governance', path: '/checkpoints' },
+  { id: 'obligations', label: 'Obligations', icon: ShieldAlert, section: 'Governance', path: '/obligations' },
+  { id: 'decision-log', label: 'Decision Log', icon: FileText, section: 'Governance', path: '/decision-log' },
+  { id: 'policies', label: 'Policies', icon: ShieldCheck, section: 'System', path: '/policies' },
+  { id: 'telemetry', label: 'Telemetry', icon: Activity, section: 'System', path: '/telemetry' },
+  { id: 'settings', label: 'Settings', icon: Settings, section: 'System', path: '/settings' },
 ];
 
-export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
+export function Sidebar() {
+  const location = useLocation();
   const sections = ['Operations', 'Governance', 'System'];
 
   return (
     <div className="flex flex-col h-full bg-surface border-r border-border w-[240px] text-muted-foreground">
-      <div className="p-6 flex items-center gap-3 mb-2">
+      <Link to="/dashboard" className="p-6 flex items-center gap-3 mb-2 hover:opacity-80 transition-opacity">
         <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center text-white font-black text-sm shadow-lg shadow-accent/20">
           G
         </div>
@@ -52,7 +44,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
           <span className="font-black text-foreground tracking-tighter text-sm uppercase leading-none">Governanza AI</span>
           <span className="text-[9px] font-bold text-accent tracking-widest uppercase mt-1">Kernel Portal</span>
         </div>
-      </div>
+      </Link>
 
       <ScrollArea className="flex-1 px-4">
         <div className="space-y-6 py-4">
@@ -60,19 +52,19 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
             <div key={section} className="space-y-1">
               <h4 className="px-3 text-[10px] font-bold text-muted-foreground/50 uppercase tracking-[0.2em] mb-2">{section}</h4>
               {navItems.filter(item => item.section === section).map((item) => (
-                <button
+                <NavLink
                   key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={cn(
-                    "w-full flex items-center gap-3 px-3 py-2 rounded-md text-[13px] font-medium transition-all duration-200",
-                    activeTab === item.id 
-                      ? "bg-card text-foreground shadow-sm border border-border/50" 
-                      : "hover:bg-card/50 hover:text-foreground border border-transparent"
+                  to={item.path}
+                  className={({ isActive }) => cn(
+                    "w-full flex items-center gap-3 px-3 py-2 rounded-md text-[13px] font-medium transition-all duration-200 border",
+                    isActive 
+                      ? "bg-card text-foreground shadow-sm border-border/50" 
+                      : "hover:bg-card/50 hover:text-foreground border-transparent"
                   )}
                 >
-                  <item.icon className={cn("w-4 h-4", activeTab === item.id ? "text-accent" : "text-muted-foreground")} />
+                  <item.icon className={cn("w-4 h-4", location.pathname.startsWith(item.path) ? "text-accent" : "text-muted-foreground")} />
                   {item.label}
-                </button>
+                </NavLink>
               ))}
             </div>
           ))}
@@ -105,12 +97,27 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   );
 }
 
-export function Header({ title }: { title: string }) {
+export function Header() {
+  const location = useLocation();
+  
+  const getTitle = () => {
+    const path = location.pathname;
+    if (path.startsWith('/dashboard')) return 'Operational Overview';
+    if (path.startsWith('/workspaces')) return 'Workspace Management';
+    if (path.startsWith('/checkpoints')) return 'Governance Checkpoints';
+    if (path.startsWith('/obligations')) return 'Compliance Obligations';
+    if (path.startsWith('/decision-log')) return 'Governance Decision Log';
+    if (path.startsWith('/policies')) return 'Policy Packs & Rules';
+    if (path.startsWith('/telemetry')) return 'System Telemetry';
+    if (path.startsWith('/settings')) return 'Platform Settings';
+    return 'Portal';
+  };
+
   return (
     <header className="h-16 border-b border-border bg-background flex items-center justify-between px-8 sticky top-0 z-10">
       <div className="flex items-center gap-4">
         <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
-          Portal <span className="mx-2 text-border">/</span> <span className="text-foreground">{title}</span>
+          Portal <span className="mx-2 text-border">/</span> <span className="text-foreground">{getTitle()}</span>
         </div>
         <Badge variant="outline" className="text-[9px] font-mono border-accent/20 text-accent bg-accent/5 h-5">
           PROD-US-WEST-2

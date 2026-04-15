@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Sidebar, Header } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
 import { Workspaces } from './pages/Workspaces';
@@ -9,60 +10,57 @@ import { Policies } from './pages/Policies';
 import { Telemetry } from './pages/Telemetry';
 import { Settings } from './pages/Settings';
 import { motion, AnimatePresence } from 'motion/react';
+import { useLocation } from 'react-router-dom';
 
-export default function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'dashboard': return <Dashboard />;
-      case 'workspaces': return <Workspaces />;
-      case 'checkpoints': return <Checkpoints />;
-      case 'obligations': return <Obligations />;
-      case 'decision-log': return <DecisionLog />;
-      case 'policies': return <Policies />;
-      case 'telemetry': return <Telemetry />;
-      case 'settings': return <Settings />;
-      default: return <Dashboard />;
-    }
-  };
-
-  const getTitle = () => {
-    const titles: Record<string, string> = {
-      'dashboard': 'Operational Overview',
-      'workspaces': 'Workspace Management',
-      'checkpoints': 'Governance Checkpoints',
-      'obligations': 'Compliance Obligations',
-      'decision-log': 'Governance Decision Log',
-      'policies': 'Policy Packs & Rules',
-      'telemetry': 'System Telemetry',
-      'settings': 'Platform Settings',
-    };
-    return titles[activeTab] || 'Portal';
-  };
+function AnimatedRoutes() {
+  const location = useLocation();
 
   return (
-    <div className="flex h-screen bg-background text-foreground overflow-hidden font-sans selection:bg-accent/30">
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-      
-      <main className="flex-1 flex flex-col overflow-hidden relative">
-        <Header title={getTitle()} />
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={location.pathname}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
+        className="max-w-7xl mx-auto w-full"
+      >
+        <Routes location={location}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/workspaces" element={<Workspaces />} />
+          <Route path="/workspaces/:id" element={<Workspaces />} />
+          <Route path="/checkpoints" element={<Checkpoints />} />
+          <Route path="/checkpoints/:id" element={<Checkpoints />} />
+          <Route path="/obligations" element={<Obligations />} />
+          <Route path="/obligations/:id" element={<Obligations />} />
+          <Route path="/decision-log" element={<DecisionLog />} />
+          <Route path="/decision-log/:id" element={<DecisionLog />} />
+          <Route path="/policies" element={<Policies />} />
+          <Route path="/policies/:id" element={<Policies />} />
+          <Route path="/telemetry" element={<Telemetry />} />
+          <Route path="/telemetry/:id" element={<Telemetry />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <div className="flex h-screen bg-background text-foreground overflow-hidden font-sans selection:bg-accent/30">
+        <Sidebar />
         
-        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-              className="max-w-7xl mx-auto w-full"
-            >
-              {renderContent()}
-            </motion.div>
-          </AnimatePresence>
-        </div>
-      </main>
-    </div>
+        <main className="flex-1 flex flex-col overflow-hidden relative">
+          <Header />
+          
+          <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+            <AnimatedRoutes />
+          </div>
+        </main>
+      </div>
+    </BrowserRouter>
   );
 }

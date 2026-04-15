@@ -9,6 +9,7 @@ export interface Workspace {
   name: string;
   owner: string;
   status: Status;
+  type: string;
   activeCheckpointId: string;
   openObligationsCount: number;
   lastDecisionOutcome: DecisionOutcome;

@@ -30,18 +30,20 @@ import {
   Line
 } from 'recharts';
 import { Button } from '@/components/ui/button';
+import { useNavigate, Link } from 'react-router-dom';
 
 export function Dashboard() {
+  const navigate = useNavigate();
   const blockedWorkspaces = mockWorkspaces.filter(w => w.status === 'BLOCKED');
   const openCheckpoints = mockCheckpoints.filter(c => c.status === 'OPEN');
   const pendingObligations = mockObligations.filter(o => o.status === 'OPEN');
   const criticalDecisions = mockDecisions.filter(d => d.outcome === 'DENY').slice(0, 5);
 
   const stats = [
-    { label: 'Blocked Workspaces', value: blockedWorkspaces.length, icon: ShieldAlert, color: 'text-error', desc: 'Requires immediate intervention' },
-    { label: 'Active Checkpoints', value: openCheckpoints.length, icon: CheckCircle2, color: 'text-accent', desc: 'Governance gates in progress' },
-    { label: 'Pending Obligations', value: pendingObligations.length, icon: FileText, color: 'text-warning', desc: 'Evidence collection required' },
-    { label: 'Critical Denials', value: criticalDecisions.length, icon: AlertTriangle, color: 'text-error', desc: 'Last 24 hours' },
+    { label: 'Blocked Workspaces', value: blockedWorkspaces.length, icon: ShieldAlert, color: 'text-error', desc: 'Requires immediate intervention', path: '/workspaces' },
+    { label: 'Active Checkpoints', value: openCheckpoints.length, icon: CheckCircle2, color: 'text-accent', desc: 'Governance gates in progress', path: '/checkpoints' },
+    { label: 'Pending Obligations', value: pendingObligations.length, icon: FileText, color: 'text-warning', desc: 'Evidence collection required', path: '/obligations' },
+    { label: 'Critical Denials', value: criticalDecisions.length, icon: AlertTriangle, color: 'text-error', desc: 'Last 24 hours', path: '/decision-log' },
   ];
 
   return (
@@ -54,7 +56,11 @@ export function Dashboard() {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {stats.map((stat, i) => (
-            <Card key={i} className="bg-surface border-border hover:border-accent/30 transition-all duration-300 group">
+            <Card 
+              key={i} 
+              className="bg-surface border-border hover:border-accent/30 transition-all duration-300 group cursor-pointer"
+              onClick={() => navigate(stat.path)}
+            >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-2">
                   <div className={cn("p-2 rounded-lg bg-background border border-border", stat.color)}>
@@ -86,7 +92,12 @@ export function Dashboard() {
                   </CardTitle>
                   <CardDescription className="text-muted-foreground">High-risk environments requiring policy resolution</CardDescription>
                 </div>
-                <Button variant="ghost" size="sm" className="text-accent hover:text-accent/80 text-xs">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-accent hover:text-accent/80 text-xs"
+                  onClick={() => navigate('/workspaces')}
+                >
                   View All Blocked
                 </Button>
               </div>
@@ -94,7 +105,7 @@ export function Dashboard() {
             <CardContent className="p-0">
               <div className="divide-y divide-border">
                 {blockedWorkspaces.map((ws) => (
-                  <div key={ws.id} className="p-4 hover:bg-card/30 transition-colors flex items-start justify-between group">
+                  <div key={ws.id} className="p-4 hover:bg-card/30 transition-colors flex items-start justify-between group cursor-pointer" onClick={() => navigate(`/workspaces/${ws.id}`)}>
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-bold text-foreground group-hover:text-accent transition-colors">{ws.name}</span>
@@ -109,7 +120,7 @@ export function Dashboard() {
                         <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Obligations: {ws.openObligationsCount}</span>
                       </div>
                     </div>
-                    <Button size="sm" className="bg-accent hover:bg-accent/90 text-white text-xs">
+                    <Button size="sm" className="bg-accent hover:bg-accent/90 text-white text-xs" onClick={(e) => { e.stopPropagation(); navigate(`/workspaces/${ws.id}`); }}>
                       Resolve Block
                     </Button>
                   </div>
@@ -125,7 +136,12 @@ export function Dashboard() {
                 <CardTitle className="text-foreground">Governance Decision Console</CardTitle>
                 <CardDescription className="text-muted-foreground">Real-time evaluation stream from the Kernel</CardDescription>
               </div>
-              <Button variant="outline" size="sm" className="bg-background border-border text-muted-foreground hover:text-foreground text-xs">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="bg-background border-border text-muted-foreground hover:text-foreground text-xs"
+                onClick={() => navigate('/decision-log')}
+              >
                 Open Full Log
               </Button>
             </CardHeader>
@@ -142,7 +158,11 @@ export function Dashboard() {
                   </thead>
                   <tbody className="divide-y divide-border/50">
                     {mockDecisions.slice(0, 6).map((decision) => (
-                      <tr key={decision.id} className="hover:bg-card/30 transition-colors group cursor-pointer">
+                      <tr 
+                        key={decision.id} 
+                        className="hover:bg-card/30 transition-colors group cursor-pointer"
+                        onClick={() => navigate(`/decision-log/${decision.id}`)}
+                      >
                         <td className="py-3 px-4">
                           <OutcomeBadge outcome={decision.outcome} />
                         </td>
@@ -175,12 +195,16 @@ export function Dashboard() {
             </CardHeader>
             <CardContent className="p-4 space-y-4">
               {[
-                { title: 'Satisfy Security Patch Obligation', desc: 'Apply patches to Core Banking API to unblock deployment.', target: 'ws-1', type: 'ACTION' },
-                { title: 'Upload SOC2 Evidence', desc: 'Required for Auth Service security audit checkpoint.', target: 'ws-2', type: 'EVIDENCE' },
-                { title: 'Close Production Readiness', desc: 'All rules passed for Payment Gateway. Ready for closure.', target: 'ws-3', type: 'SUCCESS' },
-                { title: 'Review Denied Intent tr-112233', desc: 'Analyze critical vulnerability block in Auth Service.', target: 'ws-2', type: 'ERROR' },
+                { title: 'Satisfy Security Patch Obligation', desc: 'Apply patches to Core Banking API to unblock deployment.', target: 'ws-1', type: 'ACTION', path: '/workspaces/ws-1' },
+                { title: 'Upload SOC2 Evidence', desc: 'Required for Auth Service security audit checkpoint.', target: 'ws-2', type: 'EVIDENCE', path: '/workspaces/ws-2' },
+                { title: 'Close Production Readiness', desc: 'All rules passed for Payment Gateway. Ready for closure.', target: 'ws-3', type: 'SUCCESS', path: '/workspaces/ws-3' },
+                { title: 'Review Denied Intent tr-112233', desc: 'Analyze critical vulnerability block in Auth Service.', target: 'ws-2', type: 'ERROR', path: '/decision-log/dec-2' },
               ].map((action, i) => (
-                <div key={i} className="p-3 rounded-lg bg-card border border-border flex flex-col gap-2 hover:border-accent/50 transition-colors cursor-pointer group">
+                <div 
+                  key={i} 
+                  className="p-3 rounded-lg bg-card border border-border flex flex-col gap-2 hover:border-accent/50 transition-colors cursor-pointer group"
+                  onClick={() => navigate(action.path)}
+                >
                   <div className="flex items-center justify-between">
                     <span className={cn(
                       "text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider",
@@ -208,9 +232,9 @@ export function Dashboard() {
             <CardContent className="p-4 space-y-4">
               <div className="space-y-3">
                 {mockCheckpoints.filter(c => c.status === 'OPEN').slice(0, 3).map((cp) => (
-                  <div key={cp.id} className="space-y-1">
+                  <div key={cp.id} className="space-y-1 cursor-pointer group" onClick={() => navigate(`/checkpoints/${cp.id}`)}>
                     <div className="flex items-center justify-between text-[10px]">
-                      <span className="font-medium text-foreground/80">{cp.name}</span>
+                      <span className="font-medium text-foreground/80 group-hover:text-accent transition-colors">{cp.name}</span>
                       <span className="text-muted-foreground">{cp.evidenceRequired.length} missing</span>
                     </div>
                     <div className="h-1 w-full bg-card rounded-full overflow-hidden">
@@ -220,7 +244,11 @@ export function Dashboard() {
                   </div>
                 ))}
               </div>
-              <Button variant="ghost" className="w-full text-[10px] text-muted-foreground hover:text-foreground h-auto p-0 pt-2">
+              <Button 
+                variant="ghost" 
+                className="w-full text-[10px] text-muted-foreground hover:text-foreground h-auto p-0 pt-2"
+                onClick={() => navigate('/obligations')}
+              >
                 View Evidence Center
               </Button>
             </CardContent>

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { mockDecisions, mockWorkspaces, mockCheckpoints, mockObligations } from '../mockData';
+import { mockDecisions, mockWorkspaces, mockCheckpoints, mockObligations, mockPolicyPacks } from '../mockData';
 import { OutcomeBadge, SeverityBadge } from '../components/Badges';
 import { 
   FileText, 
@@ -30,14 +30,25 @@ import {
   SheetTitle, 
   SheetDescription 
 } from '@/components/ui/sheet';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { useParams, useNavigate } from 'react-router-dom';
 
 export function DecisionLog() {
-  const [selectedDecision, setSelectedDecision] = useState<any>(null);
+  const { id } = useParams();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [outcomeFilter, setOutcomeFilter] = useState<string | null>(null);
+  const [actorFilter, setActorFilter] = useState<string | null>(null);
+  const [workspaceFilter, setWorkspaceFilter] = useState<string | null>(null);
+  const [policyFilter, setPolicyFilter] = useState<string | null>(null);
 
   const filteredDecisions = mockDecisions.filter(d => {
     const matchesSearch = d.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -45,11 +56,18 @@ export function DecisionLog() {
       d.actor.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesOutcome = outcomeFilter ? d.outcome === outcomeFilter : true;
+    const matchesActor = actorFilter ? d.actor === actorFilter : true;
+    const matchesWorkspace = workspaceFilter ? d.workspaceId === workspaceFilter : true;
+    const matchesPolicy = policyFilter ? d.policyRefs.includes(policyFilter) : true;
     
-    return matchesSearch && matchesOutcome;
+    return matchesSearch && matchesOutcome && matchesActor && matchesWorkspace && matchesPolicy;
   });
 
+  const selectedDecision = mockDecisions.find(d => d.id === id);
+
   const outcomes = ['ALLOW', 'DENY', 'REQUIRE_EVIDENCE', 'ADVISE', 'WARNING'];
+  const actors = Array.from(new Set(mockDecisions.map(d => d.actor)));
+  const policyPacks = Array.from(new Set(mockDecisions.flatMap(d => d.policyRefs)));
 
   return (
     <div className="space-y-6">
@@ -97,14 +115,51 @@ export function DecisionLog() {
             </Button>
           ))}
           <Separator orientation="vertical" className="h-4 bg-border mx-2" />
-          <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full gap-1">
-            <Layers className="w-3 h-3" />
-            Policy Pack
-          </Button>
-          <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full gap-1">
-            <User className="w-3 h-3" />
-            Actor
-          </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant={workspaceFilter ? 'secondary' : 'outline'} size="sm" className="h-7 text-[10px] rounded-full gap-1">
+                <Layers className="w-3 h-3" />
+                {workspaceFilter ? mockWorkspaces.find(w => w.id === workspaceFilter)?.name : 'Workspace'}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="bg-card border-border text-foreground">
+              <DropdownMenuItem onClick={() => setWorkspaceFilter(null)}>All Workspaces</DropdownMenuItem>
+              {mockWorkspaces.map(ws => (
+                <DropdownMenuItem key={ws.id} onClick={() => setWorkspaceFilter(ws.id)}>{ws.name}</DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant={policyFilter ? 'secondary' : 'outline'} size="sm" className="h-7 text-[10px] rounded-full gap-1">
+                <Shield className="w-3 h-3" />
+                {policyFilter || 'Policy Pack'}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="bg-card border-border text-foreground">
+              <DropdownMenuItem onClick={() => setPolicyFilter(null)}>All Policies</DropdownMenuItem>
+              {policyPacks.map(p => (
+                <DropdownMenuItem key={p} onClick={() => setPolicyFilter(p)}>{p}</DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant={actorFilter ? 'secondary' : 'outline'} size="sm" className="h-7 text-[10px] rounded-full gap-1">
+                <User className="w-3 h-3" />
+                {actorFilter || 'Actor'}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="bg-card border-border text-foreground">
+              <DropdownMenuItem onClick={() => setActorFilter(null)}>All Actors</DropdownMenuItem>
+              {actors.map(a => (
+                <DropdownMenuItem key={a} onClick={() => setActorFilter(a)}>{a}</DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -128,7 +183,7 @@ export function DecisionLog() {
                   <tr 
                     key={decision.id} 
                     className="hover:bg-card/30 transition-colors group cursor-pointer"
-                    onClick={() => setSelectedDecision(decision)}
+                    onClick={() => navigate(`/decision-log/${decision.id}`)}
                   >
                     <td className="py-4 px-6">
                       <OutcomeBadge outcome={decision.outcome} />
@@ -141,7 +196,7 @@ export function DecisionLog() {
                         </span>
                       </div>
                     </td>
-                    <td className="py-4 px-6 text-sm font-medium text-foreground">
+                    <td className="py-4 px-6 text-sm font-medium text-foreground hover:text-accent transition-colors" onClick={(e) => { e.stopPropagation(); navigate(`/workspaces/${decision.workspaceId}`); }}>
                       {workspace?.name}
                     </td>
                     <td className="py-4 px-6">
@@ -155,7 +210,7 @@ export function DecisionLog() {
                     <td className="py-4 px-6 text-xs text-muted-foreground font-mono">
                       {new Date(decision.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </td>
-                    <td className="py-4 px-6 text-xs text-muted-foreground text-right font-mono">
+                    <td className="py-4 px-6 text-xs text-muted-foreground text-right font-mono hover:text-accent transition-colors" onClick={(e) => { e.stopPropagation(); navigate(`/telemetry/${decision.traceId}`); }}>
                       {decision.traceId}
                     </td>
                   </tr>
@@ -167,7 +222,7 @@ export function DecisionLog() {
       </Card>
 
       {/* Decision Inspector Sheet */}
-      <Sheet open={!!selectedDecision} onOpenChange={() => setSelectedDecision(null)}>
+      <Sheet open={!!selectedDecision} onOpenChange={(open) => !open && navigate('/decision-log')}>
         <SheetContent className="w-full sm:max-w-xl bg-background border-l border-border text-foreground p-0">
           {selectedDecision && (
             <div className="flex flex-col h-full">
@@ -229,7 +284,7 @@ export function DecisionLog() {
                       Decision Context
                     </h4>
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="p-3 rounded-lg bg-surface border border-border space-y-1">
+                      <div className="p-3 rounded-lg bg-surface border border-border space-y-1 cursor-pointer hover:border-accent/50 transition-colors" onClick={() => navigate(`/workspaces/${selectedDecision.workspaceId}`)}>
                         <p className="text-[9px] text-muted-foreground uppercase">Workspace</p>
                         <p className="text-xs font-bold text-foreground flex items-center gap-1">
                           {mockWorkspaces.find(w => w.id === selectedDecision.workspaceId)?.name}
@@ -261,7 +316,7 @@ export function DecisionLog() {
                           {selectedDecision.obligationIds.map((obId: string) => {
                             const ob = mockObligations.find(o => o.id === obId);
                             return (
-                              <div key={obId} className="flex items-center justify-between p-2 rounded bg-card border border-border">
+                              <div key={obId} className="flex items-center justify-between p-2 rounded bg-card border border-border cursor-pointer hover:border-accent/50 transition-colors" onClick={() => navigate(`/obligations/${obId}`)}>
                                 <span className="text-[10px] font-medium text-foreground">{ob?.title || obId}</span>
                                 <ArrowRight className="w-3 h-3 text-muted-foreground" />
                               </div>
@@ -290,25 +345,28 @@ export function DecisionLog() {
                       Policy Pack References
                     </h4>
                     <div className="space-y-2">
-                      {selectedDecision.policyRefs.map((ref: string, i: number) => (
-                        <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-surface border border-border hover:border-accent/50 transition-colors cursor-pointer group">
-                          <div className="flex items-center gap-3">
-                            <Shield className="w-4 h-4 text-muted-foreground group-hover:text-accent" />
-                            <span className="text-xs font-medium text-foreground/80 group-hover:text-accent">{ref}</span>
+                      {selectedDecision.policyRefs.map((ref: string, i: number) => {
+                        const pack = mockPolicyPacks.find(p => p.name === ref);
+                        return (
+                          <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-surface border border-border hover:border-accent/50 transition-colors cursor-pointer group" onClick={() => navigate(`/policies/${pack?.id || ref.toLowerCase()}`)}>
+                            <div className="flex items-center gap-3">
+                              <Shield className="w-4 h-4 text-muted-foreground group-hover:text-accent" />
+                              <span className="text-xs font-medium text-foreground/80 group-hover:text-accent">{ref}</span>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-zinc-700" />
                           </div>
-                          <ChevronRight className="w-4 h-4 text-zinc-700" />
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </section>
                 </div>
               </ScrollArea>
 
               <div className="p-6 border-t border-border bg-card/30 flex gap-3">
-                <Button className="flex-1 bg-accent hover:bg-accent/90 text-white text-xs h-9">
+                <Button className="flex-1 bg-accent hover:bg-accent/90 text-white text-xs h-9" onClick={() => navigate(`/telemetry/${selectedDecision.traceId}`)}>
                   Correlate Telemetry Trace
                 </Button>
-                <Button variant="outline" className="flex-1 bg-surface border-border text-muted-foreground hover:text-foreground text-xs h-9">
+                <Button variant="outline" className="flex-1 bg-surface border-border text-muted-foreground hover:text-foreground text-xs h-9" onClick={() => navigate(`/workspaces/${selectedDecision.workspaceId}`)}>
                   View Workspace Detail
                 </Button>
               </div>
