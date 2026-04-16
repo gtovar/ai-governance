@@ -3,21 +3,23 @@ import { Badge } from '@/components/ui/badge';
 import { DecisionOutcome, Severity, Status } from '@/src/types';
 import { cn } from '@/lib/utils';
 
+const baseBadgeClass = 'rounded-full px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em]';
+
 export function StatusBadge({ status }: { status: Status }) {
   const styles: Record<Status, string> = {
-    ACTIVE: "bg-success/10 text-success border-success/20",
-    INACTIVE: "bg-muted-foreground/10 text-muted-foreground border-muted-foreground/20",
-    PENDING: "bg-warning/10 text-warning border-warning/20",
-    COMPLETED: "bg-accent/10 text-accent border-accent/20",
-    BLOCKED: "bg-error/10 text-error border-error/20",
-    OPEN: "bg-accent/10 text-accent border-accent/20",
-    CLOSED: "bg-muted-foreground/10 text-muted-foreground border-muted-foreground/20",
-    SATISFIED: "bg-success/10 text-success border-success/20",
-    WAIVED: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+    ACTIVE: 'border-success/20 bg-success/10 text-success',
+    INACTIVE: 'border-border bg-muted text-muted-foreground',
+    PENDING: 'border-warning/20 bg-warning/10 text-warning',
+    COMPLETED: 'border-primary/20 bg-primary/10 text-primary',
+    BLOCKED: 'border-error/20 bg-error/10 text-error',
+    OPEN: 'border-primary/20 bg-primary/10 text-primary',
+    CLOSED: 'border-border bg-muted text-muted-foreground',
+    SATISFIED: 'border-success/20 bg-success/10 text-success',
+    WAIVED: 'border-border bg-muted text-muted-foreground',
   };
 
   return (
-    <Badge variant="outline" className={cn("font-semibold px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider", styles[status])}>
+    <Badge variant="outline" className={cn(baseBadgeClass, styles[status])}>
       {status}
     </Badge>
   );
@@ -25,14 +27,14 @@ export function StatusBadge({ status }: { status: Status }) {
 
 export function SeverityBadge({ severity }: { severity: Severity }) {
   const styles: Record<Severity, string> = {
-    LOW: "bg-muted-foreground/10 text-muted-foreground border-muted-foreground/20",
-    MEDIUM: "bg-accent/10 text-accent border-accent/20",
-    HIGH: "bg-warning/10 text-warning border-warning/20",
-    CRITICAL: "bg-error/10 text-error border-error/20 animate-pulse",
+    LOW: 'border-border bg-muted text-muted-foreground',
+    MEDIUM: 'border-primary/20 bg-primary/10 text-primary',
+    HIGH: 'border-warning/20 bg-warning/10 text-warning',
+    CRITICAL: 'border-error/20 bg-error/10 text-error',
   };
 
   return (
-    <Badge variant="outline" className={cn("font-semibold px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider", styles[severity])}>
+    <Badge variant="outline" className={cn(baseBadgeClass, styles[severity])}>
       {severity}
     </Badge>
   );
@@ -40,15 +42,15 @@ export function SeverityBadge({ severity }: { severity: Severity }) {
 
 export function OutcomeBadge({ outcome }: { outcome: DecisionOutcome }) {
   const styles: Record<DecisionOutcome, string> = {
-    ALLOW: "bg-success/10 text-success border-success/20",
-    DENY: "bg-error/10 text-error border-error/20",
-    REQUIRE_EVIDENCE: "bg-warning/10 text-warning border-warning/20",
-    ADVISE: "bg-accent/10 text-accent border-accent/20",
-    WARNING: "bg-warning/10 text-warning border-warning/20",
+    ALLOW: 'border-success/20 bg-success/10 text-success',
+    DENY: 'border-error/20 bg-error/10 text-error',
+    REQUIRE_EVIDENCE: 'border-warning/20 bg-warning/10 text-warning',
+    ADVISE: 'border-primary/20 bg-primary/10 text-primary',
+    WARNING: 'border-warning/20 bg-warning/10 text-warning',
   };
 
   return (
-    <Badge variant="outline" className={cn("font-semibold px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider", styles[outcome])}>
+    <Badge variant="outline" className={cn(baseBadgeClass, styles[outcome])}>
       {outcome.replace('_', ' ')}
     </Badge>
   );

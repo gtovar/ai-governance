@@ -1,160 +1,209 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { 
-  Settings as SettingsIcon, 
-  Building2, 
-  Shield, 
-  Bell, 
-  Database, 
-  Globe, 
-  Lock, 
-  User,
+import {
+  Building2,
+  Shield,
+  Bell,
+  Database,
   Eye,
   Terminal,
   Save,
-  Activity
+  Activity,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-import { useParams, useNavigate } from 'react-router-dom';
 import { ComingSoon } from '../components/ComingSoon';
+import { PageHeader } from '../components/PageHeader';
+import { cn } from '@/lib/utils';
+
+const integrations = [
+  { name: 'GitHub Enterprise', status: 'Connected', icon: Terminal },
+  { name: 'Langfuse', status: 'Active', icon: Eye },
+  { name: 'Datadog', status: 'Pending', icon: Activity },
+  { name: 'Slack Notifications', status: 'Disabled', icon: Bell },
+];
 
 export function Settings() {
   const [comingSoon, setComingSoon] = React.useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
 
   return (
-    <div className="max-w-4xl space-y-8">
-      <div className="space-y-1">
-        <h2 className="text-2xl font-bold text-foreground">Platform Settings</h2>
-        <p className="text-muted-foreground">Configure your governance environment and integrations.</p>
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        eyebrow="Administration"
+        title="Platform settings"
+        description="Move the product toward a repeatable application shell: standardized form spacing, section hierarchy, and consistent action placement. This page is the first pass of that pattern."
+        actions={
+          <>
+            <Button
+              variant="ghost"
+              onClick={() => setComingSoon({ open: true, feature: 'Discard Changes' })}
+            >
+              Discard changes
+            </Button>
+            <Button
+              className="gap-2"
+              onClick={() => setComingSoon({ open: true, feature: 'Save Configuration' })}
+            >
+              <Save className="h-4 w-4" />
+              Save configuration
+            </Button>
+          </>
+        }
+      />
 
-      <div className="space-y-6">
-        {/* Organization Section */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-2 text-foreground font-semibold">
-            <Building2 className="w-4 h-4 text-accent" />
-            <h3>Organization</h3>
-          </div>
-          <Card className="bg-surface border-border">
-            <CardContent className="p-6 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="org-name" className="text-muted-foreground">Organization Name</Label>
-                  <Input id="org-name" defaultValue="Fintech Global Corp" className="bg-card border-border text-foreground" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="org-domain" className="text-muted-foreground">Primary Domain</Label>
-                  <Input id="org-domain" defaultValue="fintech-global.com" className="bg-card border-border text-foreground" />
-                </div>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
+        <div className="space-y-6">
+          <Card className="surface-1">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-primary" />
+                Organization
+              </CardTitle>
+              <CardDescription>Base metadata used across governance workflows and reporting.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="org-name">Organization name</Label>
+                <Input id="org-name" defaultValue="Fintech Global Corp" className="h-11 bg-background" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="org-domain">Primary domain</Label>
+                <Input id="org-domain" defaultValue="fintech-global.com" className="h-11 bg-background" />
               </div>
             </CardContent>
           </Card>
-        </section>
 
-        {/* Governance Mode Section */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-2 text-foreground font-semibold">
-            <Shield className="w-4 h-4 text-accent" />
-            <h3>Governance Mode</h3>
-          </div>
-          <Card className="bg-surface border-border">
-            <CardContent className="p-6 space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-foreground">Audit-Only Mode</Label>
-                  <p className="text-xs text-muted-foreground">Decisions will be logged but never block actions.</p>
-                </div>
-                <Switch className="data-[state=checked]:bg-accent" />
-              </div>
-              <Separator className="bg-border" />
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-foreground">Telemetry Export</Label>
-                  <p className="text-xs text-muted-foreground">Enable OpenTelemetry and Langfuse data export.</p>
-                </div>
-                <Switch defaultChecked className="data-[state=checked]:bg-accent" />
-              </div>
-              <Separator className="bg-border" />
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-foreground">Strict Evidence Validation</Label>
-                  <p className="text-xs text-muted-foreground">Require cryptographic proof for all evidence uploads.</p>
-                </div>
-                <Switch defaultChecked className="data-[state=checked]:bg-accent" />
-              </div>
+          <Card className="surface-1">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-4 w-4 text-primary" />
+                Governance mode
+              </CardTitle>
+              <CardDescription>Use consistent preference rows instead of ad hoc control groupings.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-1">
+              <SettingRow
+                title="Audit-only mode"
+                description="Decisions are logged but never block actions. Useful for staged rollouts."
+                control={<Switch />}
+              />
+              <Separator />
+              <SettingRow
+                title="Telemetry export"
+                description="Enable OpenTelemetry and Langfuse export for runtime observability."
+                control={<Switch defaultChecked />}
+              />
+              <Separator />
+              <SettingRow
+                title="Strict evidence validation"
+                description="Require stronger proof and metadata before obligations can be closed."
+                control={<Switch defaultChecked />}
+              />
             </CardContent>
           </Card>
-        </section>
 
-        {/* Integrations Mock */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-2 text-foreground font-semibold">
-            <Database className="w-4 h-4 text-accent" />
-            <h3>Integrations</h3>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[
-              { name: 'GitHub Enterprise', status: 'Connected', icon: Terminal },
-              { name: 'Langfuse', status: 'Active', icon: Eye },
-              { name: 'Datadog', status: 'Pending', icon: Activity },
-              { name: 'Slack Notifications', status: 'Disabled', icon: Bell },
-            ].map((int, i) => (
-              <Card 
-                key={i} 
-                className="bg-surface border-border hover:border-accent/50 transition-colors cursor-pointer"
-                onClick={() => setComingSoon({ open: true, feature: `Configure ${int.name}` })}
-              >
-                <CardContent className="p-4 flex items-center justify-between">
+          <Card className="surface-1">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Database className="h-4 w-4 text-primary" />
+                Integrations
+              </CardTitle>
+              <CardDescription>Standard card anatomy for external connections and operational state.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-2">
+              {integrations.map((integration) => (
+                <button
+                  key={integration.name}
+                  type="button"
+                  className="surface-2 flex items-center justify-between p-4 text-left transition-colors hover:border-primary/40"
+                  onClick={() => setComingSoon({ open: true, feature: `Configure ${integration.name}` })}
+                >
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded bg-card border border-border text-muted-foreground">
-                      <int.icon className="w-4 h-4" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+                      <integration.icon className="h-4 w-4" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-foreground">{int.name}</p>
-                      <p className={cn(
-                        "text-[10px] font-bold uppercase tracking-wider",
-                        int.status === 'Connected' || int.status === 'Active' ? 'text-success' : 'text-muted-foreground'
-                      )}>{int.status}</p>
+                      <p className="text-sm font-medium text-foreground">{integration.name}</p>
+                      <p
+                        className={cn(
+                          'mt-1 text-xs font-medium',
+                          integration.status === 'Connected' || integration.status === 'Active'
+                            ? 'text-success'
+                            : integration.status === 'Pending'
+                              ? 'text-warning'
+                              : 'text-muted-foreground'
+                        )}
+                      >
+                        {integration.status}
+                      </p>
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">Configure</Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
+                  <Button variant="ghost" size="sm">
+                    Configure
+                  </Button>
+                </button>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
 
-        <div className="pt-4 flex justify-end gap-3">
-          <Button 
-            variant="ghost" 
-            className="text-muted-foreground hover:text-foreground"
-            onClick={() => setComingSoon({ open: true, feature: 'Discard Changes' })}
-          >
-            Discard Changes
-          </Button>
-          <Button 
-            className="bg-accent hover:bg-accent/90 text-white gap-2"
-            onClick={() => setComingSoon({ open: true, feature: 'Save Configuration' })}
-          >
-            <Save className="w-4 h-4" />
-            Save Configuration
-          </Button>
+        <div className="space-y-6">
+          <Card className="surface-1">
+            <CardHeader>
+              <CardTitle>Design standard adopted</CardTitle>
+              <CardDescription>What changed in this pass.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-muted-foreground">
+              <p>Semantic page header with fixed action placement.</p>
+              <p>Consistent card spacing, radii, and border treatment.</p>
+              <p>Reusable preference rows for settings instead of one-off layouts.</p>
+              <p>Neutral, framework-like tone based on shared tokens rather than isolated custom styles.</p>
+            </CardContent>
+          </Card>
+
+          <Card className="surface-1">
+            <CardHeader>
+              <CardTitle>Next rollout</CardTitle>
+              <CardDescription>Pages to migrate after this one.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm text-muted-foreground">
+              <p>Dashboard KPI cards</p>
+              <p>Workspace list filters and toolbar</p>
+              <p>Decision log table header and empty states</p>
+            </CardContent>
+          </Card>
         </div>
       </div>
-      <ComingSoon 
-        isOpen={comingSoon.open} 
-        onOpenChange={(open) => setComingSoon({ ...comingSoon, open })} 
-        featureName={comingSoon.feature} 
+
+      <ComingSoon
+        isOpen={comingSoon.open}
+        onOpenChange={(open) => setComingSoon({ ...comingSoon, open })}
+        featureName={comingSoon.feature}
       />
     </div>
   );
 }
 
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(' ');
+function SettingRow({
+  title,
+  description,
+  control,
+}: {
+  title: string;
+  description: string;
+  control: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-6 py-4">
+      <div className="space-y-1">
+        <Label className="text-sm font-medium text-foreground">{title}</Label>
+        <p className="text-sm leading-6 text-muted-foreground">{description}</p>
+      </div>
+      <div className="pt-1">{control}</div>
+    </div>
+  );
 }

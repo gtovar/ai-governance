@@ -24,6 +24,7 @@ import {
   Line
 } from 'recharts';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '../components/PageHeader';
 import { useNavigate, Link } from 'react-router-dom';
 
 export function Dashboard() {
@@ -44,30 +45,31 @@ export function Dashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Governance Status Section */}
+      <PageHeader
+        eyebrow="Operations"
+        title="Governance operational status"
+        description="This page still has older AI-generated sections, but the top of the screen now uses the shared page header and more neutral KPI cards so the product starts feeling framework-based instead of one-off."
+      />
+
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-          <Activity className="w-5 h-5 text-accent" />
-          Governance Operational Status
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           {stats.map((stat, i) => (
-            <Card 
-              key={i} 
-              className="bg-surface border-border hover:border-accent/30 transition-all duration-300 group cursor-pointer"
+            <Card
+              key={i}
+              className="surface-1 cursor-pointer transition-colors hover:border-primary/30"
               onClick={() => navigate(stat.path)}
             >
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <div className={cn("p-2 rounded-lg bg-background border border-border", stat.color)}>
-                    <stat.icon className="w-4 h-4" />
+              <CardContent className="p-5">
+                <div className="mb-4 flex items-start justify-between">
+                  <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl bg-muted", stat.color)}>
+                    <stat.icon className="h-4 w-4" />
                   </div>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Live</span>
+                  <span className="text-xs font-medium text-muted-foreground">Live</span>
                 </div>
                 <div className="space-y-1">
-                  <h3 className="text-2xl font-bold text-foreground">{stat.value}</h3>
-                  <p className="text-xs font-medium text-foreground/80">{stat.label}</p>
-                  <p className="text-[10px] text-muted-foreground">{stat.desc}</p>
+                  <p className="metric-value">{stat.value}</p>
+                  <p className="text-sm font-medium text-foreground">{stat.label}</p>
+                  <p className="text-sm text-muted-foreground">{stat.desc}</p>
                 </div>
               </CardContent>
             </Card>

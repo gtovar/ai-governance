@@ -1,23 +1,25 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { NavLink, useLocation, Link } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Briefcase, 
-  CheckCircle2, 
-  ShieldAlert, 
-  FileText, 
-  ShieldCheck, 
-  Activity, 
+import {
+  LayoutDashboard,
+  Briefcase,
+  CheckCircle2,
+  ShieldAlert,
+  FileText,
+  ShieldCheck,
+  Activity,
   Settings,
   Search,
-  Bell
+  Bell,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+
+import { ComingSoon } from './ComingSoon';
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, section: 'Operations', path: '/dashboard' },
@@ -30,7 +32,23 @@ const navItems = [
   { id: 'settings', label: 'Settings', icon: Settings, section: 'System', path: '/settings' },
 ];
 
-import { ComingSoon } from './ComingSoon';
+const headerMeta: Array<{ match: RegExp; title: string; subtitle: string }> = [
+  { match: /^\/dashboard/, title: 'Operational overview', subtitle: 'Track workspace health, obligations, and governance activity.' },
+  { match: /^\/workspaces/, title: 'Workspace management', subtitle: 'Review ownership, posture, and next actions for every workspace.' },
+  { match: /^\/checkpoints/, title: 'Governance checkpoints', subtitle: 'Monitor readiness gates, missing evidence, and release blockers.' },
+  { match: /^\/obligations/, title: 'Compliance obligations', subtitle: 'See open work, evidence requests, and resolution status.' },
+  { match: /^\/decision-log/, title: 'Decision log', subtitle: 'Inspect evaluation outcomes, reasons, and traceability.' },
+  { match: /^\/policies/, title: 'Policy packs', subtitle: 'Manage the rules and controls the kernel evaluates.' },
+  { match: /^\/telemetry/, title: 'Telemetry', subtitle: 'Observe system health, throughput, and platform signals.' },
+  { match: /^\/settings/, title: 'Platform settings', subtitle: 'Configure organization defaults, governance mode, and integrations.' },
+];
+
+function getHeaderContent(pathname: string) {
+  return headerMeta.find((item) => item.match.test(pathname)) ?? {
+    title: 'Portal',
+    subtitle: 'Governance workspace',
+  };
+}
 
 export function Sidebar() {
   const location = useLocation();
@@ -38,141 +56,148 @@ export function Sidebar() {
   const [comingSoon, setComingSoon] = React.useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
 
   return (
-    <div className="flex flex-col h-full bg-surface border-r border-border w-[240px] text-muted-foreground">
-      <Link to="/dashboard" className="p-6 flex items-center gap-3 mb-2 hover:opacity-80 transition-opacity">
-        <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center text-white font-black text-sm shadow-lg shadow-accent/20">
-          G
-        </div>
-        <div className="flex flex-col">
-          <span className="font-black text-foreground tracking-tighter text-sm uppercase leading-none">Governanza AI</span>
-          <span className="text-[9px] font-bold text-accent tracking-widest uppercase mt-1">Kernel Portal</span>
+    <aside className="hidden h-screen w-72 shrink-0 border-r border-border bg-sidebar text-sidebar-foreground lg:flex lg:flex-col">
+      <Link to="/dashboard" className="border-b border-border px-6 py-5 transition-opacity hover:opacity-90">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground shadow-sm">
+            AI
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold tracking-tight text-foreground">AI Governance</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">Standardized operations console</p>
+          </div>
         </div>
       </Link>
 
-      <ScrollArea className="flex-1 px-4">
-        <div className="space-y-6 py-4">
-          {sections.map(section => (
-            <div key={section} className="space-y-1">
-              <h4 className="px-3 text-[10px] font-bold text-muted-foreground/50 uppercase tracking-[0.2em] mb-2">{section}</h4>
-              {navItems.filter(item => item.section === section).map((item) => (
-                <NavLink
-                  key={item.id}
-                  to={item.path}
-                  className={({ isActive }) => cn(
-                    "w-full flex items-center gap-3 px-3 py-2 rounded-md text-[13px] font-medium transition-all duration-200 border",
-                    isActive 
-                      ? "bg-card text-foreground shadow-sm border-border/50" 
-                      : "hover:bg-card/50 hover:text-foreground border-transparent"
-                  )}
-                >
-                  <item.icon className={cn("w-4 h-4", location.pathname.startsWith(item.path) ? "text-accent" : "text-muted-foreground")} />
-                  {item.label}
-                </NavLink>
-              ))}
+      <ScrollArea className="flex-1 px-4 py-5">
+        <div className="space-y-6">
+          {sections.map((section) => (
+            <div key={section} className="space-y-2">
+              <p className="px-3 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">{section}</p>
+              <nav className="space-y-1">
+                {navItems
+                  .filter((item) => item.section === section)
+                  .map((item) => (
+                    <NavLink
+                      key={item.id}
+                      to={item.path}
+                      className={({ isActive }) =>
+                        cn(
+                          'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors',
+                          isActive
+                            ? 'bg-sidebar-accent text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:bg-sidebar-accent/70 hover:text-foreground'
+                        )
+                      }
+                    >
+                      <item.icon
+                        className={cn(
+                          'h-4 w-4',
+                          location.pathname.startsWith(item.path) ? 'text-primary' : 'text-muted-foreground'
+                        )}
+                      />
+                      <span>{item.label}</span>
+                    </NavLink>
+                  ))}
+              </nav>
             </div>
           ))}
         </div>
       </ScrollArea>
 
-      <div className="p-4 border-t border-border space-y-4">
-        <div className="px-2 space-y-2">
-          <div className="flex items-center justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-            <span>Kernel Health</span>
-            <span className="text-success">99.9%</span>
+      <div className="border-t border-border p-4">
+        <div className="surface-2 mb-4 p-3">
+          <div className="mb-2 flex items-center justify-between text-xs">
+            <span className="font-medium text-muted-foreground">Kernel health</span>
+            <span className="font-semibold text-success">99.9%</span>
           </div>
-          <div className="h-1 w-full bg-card rounded-full overflow-hidden">
-            <div className="h-full bg-success w-[99.9%]" />
+          <div className="h-2 overflow-hidden rounded-full bg-muted">
+            <div className="h-full w-[99.9%] rounded-full bg-success" />
           </div>
         </div>
 
-        <div 
-          className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-card transition-colors cursor-pointer group"
+        <button
+          type="button"
+          className="flex w-full items-center gap-3 rounded-xl border border-transparent px-2 py-2 text-left transition-colors hover:bg-sidebar-accent"
           onClick={() => setComingSoon({ open: true, feature: 'User Profile Settings' })}
         >
-          <Avatar className="w-8 h-8 border border-border group-hover:border-accent/50 transition-colors">
+          <Avatar className="h-10 w-10 border border-border">
             <AvatarImage src="https://github.com/shadcn.png" />
             <AvatarFallback>GT</AvatarFallback>
           </Avatar>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-foreground truncate">Gilberto Tovar</p>
-            <p className="text-[10px] text-muted-foreground truncate uppercase font-bold tracking-wider">Admin Operator</p>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-foreground">Gilberto Tovar</p>
+            <p className="truncate text-xs text-muted-foreground">Admin operator</p>
           </div>
-        </div>
+        </button>
       </div>
-      <ComingSoon 
-        isOpen={comingSoon.open} 
-        onOpenChange={(open) => setComingSoon({ ...comingSoon, open })} 
-        featureName={comingSoon.feature} 
+
+      <ComingSoon
+        isOpen={comingSoon.open}
+        onOpenChange={(open) => setComingSoon({ ...comingSoon, open })}
+        featureName={comingSoon.feature}
       />
-    </div>
+    </aside>
   );
 }
 
 export function Header() {
   const location = useLocation();
   const [comingSoon, setComingSoon] = React.useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
-  
-  const getTitle = () => {
-    const path = location.pathname;
-    if (path.startsWith('/dashboard')) return 'Operational Overview';
-    if (path.startsWith('/workspaces')) return 'Workspace Management';
-    if (path.startsWith('/checkpoints')) return 'Governance Checkpoints';
-    if (path.startsWith('/obligations')) return 'Compliance Obligations';
-    if (path.startsWith('/decision-log')) return 'Governance Decision Log';
-    if (path.startsWith('/policies')) return 'Policy Packs & Rules';
-    if (path.startsWith('/telemetry')) return 'System Telemetry';
-    if (path.startsWith('/settings')) return 'Platform Settings';
-    return 'Portal';
-  };
+  const header = getHeaderContent(location.pathname);
 
   return (
-    <header className="h-16 border-b border-border bg-background flex items-center justify-between px-8 sticky top-0 z-10">
-      <div className="flex items-center gap-4">
-        <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
-          Portal <span className="mx-2 text-border">/</span> <span className="text-foreground">{getTitle()}</span>
+    <header className="sticky top-0 z-10 border-b border-border/80 bg-background/90 backdrop-blur">
+      <div className="flex items-center justify-between gap-4 px-6 py-4 lg:px-8">
+        <div className="min-w-0">
+          <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
+            <span>Portal</span>
+            <span>/</span>
+            <span className="font-medium text-foreground">{header.title}</span>
+          </div>
+          <p className="truncate text-sm text-muted-foreground">{header.subtitle}</p>
         </div>
-        <Badge variant="outline" className="text-[9px] font-mono border-accent/20 text-accent bg-accent/5 h-5">
-          PROD-US-WEST-2
-        </Badge>
-      </div>
-      
-      <div className="flex items-center gap-4">
-        <div className="relative w-64">
-          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-          <Input 
-            placeholder="Search traces, decisions, workspaces..." 
-            className="pl-9 bg-surface border-border text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-accent h-9 text-xs"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') setComingSoon({ open: true, feature: 'Global Search' });
-            }}
-          />
+
+        <div className="flex items-center gap-2">
+          <div className="relative hidden w-80 md:block">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search traces, decisions, or workspaces"
+              className="h-10 rounded-xl bg-surface pl-9"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') setComingSoon({ open: true, feature: 'Global Search' });
+              }}
+            />
+          </div>
+
+          <Badge variant="outline" className="hidden h-9 rounded-xl px-3 text-xs md:flex">
+            PROD-US-WEST-2
+          </Badge>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 rounded-xl"
+            onClick={() => setComingSoon({ open: true, feature: 'Notifications' })}
+          >
+            <Bell className="h-4 w-4" />
+          </Button>
+
+          <Button
+            variant="outline"
+            className="hidden h-10 rounded-xl md:inline-flex"
+            onClick={() => setComingSoon({ open: true, feature: 'Kernel Health Diagnostics' })}
+          >
+            <span className="mr-2 h-2 w-2 rounded-full bg-success" />
+            Kernel online
+          </Button>
         </div>
-        
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="text-muted-foreground hover:text-foreground hover:bg-surface h-9 w-9"
-          onClick={() => setComingSoon({ open: true, feature: 'Notifications' })}
-        >
-          <Bell className="w-4 h-4" />
-        </Button>
-        
-        <div className="h-4 w-[1px] bg-border mx-1" />
-        
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="text-muted-foreground hover:text-foreground hover:bg-surface gap-2 h-9 px-3"
-          onClick={() => setComingSoon({ open: true, feature: 'Kernel Health Diagnostics' })}
-        >
-          <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-          <span className="text-[10px] font-bold uppercase tracking-wider">Kernel Online</span>
-        </Button>
       </div>
-      <ComingSoon 
-        isOpen={comingSoon.open} 
-        onOpenChange={(open) => setComingSoon({ ...comingSoon, open })} 
-        featureName={comingSoon.feature} 
+
+      <ComingSoon
+        isOpen={comingSoon.open}
+        onOpenChange={(open) => setComingSoon({ ...comingSoon, open })}
+        featureName={comingSoon.feature}
       />
     </header>
   );
