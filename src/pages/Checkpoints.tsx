@@ -35,7 +35,7 @@ import { ComingSoon } from '../components/ComingSoon';
 
 export function Checkpoints() {
   const navigate = useNavigate();
-  const { checkpoints, workspaces, obligations, decisions, getCheckpointReadiness } = useGovernance();
+  const { checkpoints, workspaces, getCheckpointReadiness, getObligationsByCheckpoint, getDecisionsByCheckpoint } = useGovernance();
   const [comingSoon, setComingSoon] = useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
 
   return (
@@ -57,7 +57,7 @@ export function Checkpoints() {
         {checkpoints.map((cp) => {
           const workspace = workspaces.find(w => w.id === cp.workspaceId);
           const progress = getCheckpointReadiness(cp.id);
-          const cpObligations = obligations.filter(o => cp.obligationIds.includes(o.id));
+          const cpObligations = getObligationsByCheckpoint(cp.id);
           const satisfiedObligationsCount = cpObligations.filter(o => o.status === 'SATISFIED' || o.status === 'WAIVED').length;
 
           return (
@@ -122,14 +122,18 @@ export function Checkpoints() {
 
                     <div className="space-y-2">
                       <p className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider">Latest Decision</p>
-                      {cp.decisionIds.length > 0 ? (
-                        <div className="flex items-center gap-2">
-                          <OutcomeBadge outcome={decisions.find(d => d.id === cp.decisionIds[0])?.outcome || 'ALLOW'} />
-                          <span className="text-[10px] font-mono text-muted-foreground">{cp.decisionIds[0]}</span>
-                        </div>
-                      ) : (
+                      {(() => {
+                        const latestDecision = getDecisionsByCheckpoint(cp.id)
+                          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
+                        return latestDecision ? (
+                          <div className="flex items-center gap-2">
+                            <OutcomeBadge outcome={latestDecision.outcome} />
+                            <span className="text-[10px] font-mono text-muted-foreground">{latestDecision.id}</span>
+                          </div>
+                        ) : (
                         <span className="text-[10px] text-muted-foreground italic">No evaluations yet</span>
-                      )}
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -160,12 +164,13 @@ export function CheckpointDetail() {
     checkpoints, 
     workspaces, 
     obligations, 
-    decisions, 
     requestCheckpointClosure,
     getCheckpointReadiness,
     isCheckpointClosable,
     getWorkspaceObligations,
-    getObligationEvidence
+    getObligationEvidence,
+    getObligationsByCheckpoint,
+    getDecisionsByCheckpoint
   } = useGovernance();
   const [isSimulating, setIsSimulating] = useState(false);
   const [simulationResult, setSimulationResult] = useState<{ outcome: 'ALLOW' | 'DENY' | 'REQUIRE_EVIDENCE'; reasons: string[] } | null>(null);
@@ -175,7 +180,7 @@ export function CheckpointDetail() {
   if (!cp) return <div className="p-8 text-center text-muted-foreground">Checkpoint not found</div>;
 
   const workspace = workspaces.find(w => w.id === cp.workspaceId);
-  const cpObligations = obligations.filter(o => cp.obligationIds.includes(o.id));
+  const cpObligations = getObligationsByCheckpoint(cp.id);
   const satisfiedObligationsCount = cpObligations.filter(o => o.status === 'SATISFIED' || o.status === 'WAIVED').length;
   const progress = getCheckpointReadiness(cp.id);
 
@@ -412,19 +417,18 @@ export function CheckpointDetail() {
               <CardTitle className="text-sm font-bold">Latest Evaluations</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {cp.decisionIds.length > 0 ? (
-                cp.decisionIds.map((dId) => {
-                  const decision = decisions.find(d => d.id === dId);
-                  return (
-                    <div key={dId} className="p-3 rounded-lg bg-card border border-border space-y-2 cursor-pointer hover:border-accent/50 transition-colors" onClick={() => navigate(`/decision-log/${dId}`)}>
+              {getDecisionsByCheckpoint(cp.id).length > 0 ? (
+                getDecisionsByCheckpoint(cp.id)
+                  .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                  .map((decision) => (
+                    <div key={decision.id} className="p-3 rounded-lg bg-card border border-border space-y-2 cursor-pointer hover:border-accent/50 transition-colors" onClick={() => navigate(`/decision-log/${decision.id}`)}>
                       <div className="flex items-center justify-between">
-                        <OutcomeBadge outcome={decision?.outcome || 'ALLOW'} />
-                        <span className="text-[10px] font-mono text-muted-foreground">{new Date(decision?.timestamp || '').toLocaleDateString()}</span>
+                        <OutcomeBadge outcome={decision.outcome || 'ALLOW'} />
+                        <span className="text-[10px] font-mono text-muted-foreground">{new Date(decision.timestamp || '').toLocaleDateString()}</span>
                       </div>
-                      <p className="text-[10px] font-mono text-foreground/80 truncate">{dId}</p>
+                      <p className="text-[10px] font-mono text-foreground/80 truncate">{decision.id}</p>
                     </div>
-                  );
-                })
+                  ))
               ) : (
                 <p className="text-xs text-muted-foreground italic text-center py-4">No evaluation history</p>
               )}

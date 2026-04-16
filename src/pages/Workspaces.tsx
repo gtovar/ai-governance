@@ -202,7 +202,9 @@ function WorkspaceDetail({ workspace, onBack }: { workspace: any, onBack: () => 
     getWorkspaceObligations,
     getWorkspaceCheckpoints,
     getWorkspaceDecisions,
-    getCheckpointReadiness
+    getCheckpointReadiness,
+    getObligationsByCheckpoint,
+    getLatestDecisionByWorkspace
   } = useGovernance();
   const [comingSoon, setComingSoon] = useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
   
@@ -508,9 +510,9 @@ function WorkspaceDetail({ workspace, onBack }: { workspace: any, onBack: () => 
               </TableHeader>
               <TableBody>
                 {workspaceCheckpoints.map((cp) => {
-                  const cpObligations = obligations.filter(o => cp.obligationIds.includes(o.id));
-                  const satisfiedCount = cpObligations.filter(o => o.status === 'SATISFIED').length;
-                  const readiness = cpObligations.length > 0 ? Math.round((satisfiedCount / cpObligations.length) * 100) : 0;
+                  const cpObligations = getObligationsByCheckpoint(cp.id);
+                  const satisfiedCount = cpObligations.filter(o => o.status === 'SATISFIED' || o.status === 'WAIVED').length;
+                  const readiness = getCheckpointReadiness(cp.id);
 
                   return (
                     <TableRow key={cp.id} className="border-border hover:bg-card/30 transition-colors group cursor-pointer" onClick={() => navigate(`/checkpoints/${cp.id}`)}>

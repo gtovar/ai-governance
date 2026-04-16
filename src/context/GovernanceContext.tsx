@@ -41,6 +41,10 @@ interface GovernanceContextType {
   getWorkspaceCheckpoints: (workspaceId: string) => Checkpoint[];
   getWorkspaceDecisions: (workspaceId: string) => Decision[];
   getObligationEvidence: (obligationId: string) => Evidence[];
+  getDecisionsByCheckpoint: (checkpointId: string) => Decision[];
+  getLatestDecisionByWorkspace: (workspaceId: string) => Decision | undefined;
+  getTelemetryByDecision: (decisionId: string) => TelemetryTrace | undefined;
+  getObligationsByCheckpoint: (checkpointId: string) => Obligation[];
   getCheckpointReadiness: (checkpointId: string) => number;
   isCheckpointClosable: (checkpointId: string) => { closable: boolean; reasons: string[] };
 }
@@ -73,18 +77,45 @@ export function GovernanceProvider({ children }: { children: React.ReactNode }) 
     return evidence.filter(e => e.obligationId === obligationId);
   }, [evidence]);
 
+  const getObligationsByCheckpoint = useCallback((checkpointId: string) => {
+    return obligations.filter(o => o.checkpointId === checkpointId);
+  }, [obligations]);
+
+  const getDecisionsByCheckpoint = useCallback((checkpointId: string) => {
+    return decisions.filter(d => {
+      if (d.checkpointId === checkpointId) return true;
+      if (d.payload?.checkpointId === checkpointId) return true;
+      return d.obligationIds.some(obligationId => {
+        const obligation = obligations.find(o => o.id === obligationId);
+        return obligation?.checkpointId === checkpointId;
+      });
+    });
+  }, [decisions, obligations]);
+
+  const getLatestDecisionByWorkspace = useCallback((workspaceId: string) => {
+    return decisions
+      .filter(d => d.workspaceId === workspaceId)
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
+  }, [decisions]);
+
+  const getTelemetryByDecision = useCallback((decisionId: string) => {
+    const decision = decisions.find(d => d.id === decisionId);
+    if (!decision) return undefined;
+    return telemetry.find(t => t.id === decision.traceId || t.decisionId === decisionId);
+  }, [decisions, telemetry]);
+
   const getCheckpointReadiness = useCallback((checkpointId: string) => {
-    const cpObligations = obligations.filter(o => o.checkpointId === checkpointId);
+    const cpObligations = getObligationsByCheckpoint(checkpointId);
     if (cpObligations.length === 0) return 100;
     const satisfied = cpObligations.filter(o => o.status === 'SATISFIED' || o.status === 'WAIVED').length;
     return Math.round((satisfied / cpObligations.length) * 100);
-  }, [obligations]);
+  }, [getObligationsByCheckpoint]);
 
   const isCheckpointClosable = useCallback((checkpointId: string) => {
     const cp = checkpoints.find(c => c.id === checkpointId);
     if (!cp) return { closable: false, reasons: ['Checkpoint not found'] };
 
-    const cpObligations = obligations.filter(o => o.checkpointId === checkpointId);
+    const cpObligations = getObligationsByCheckpoint(checkpointId);
     const openObligations = cpObligations.filter(o => o.status === 'OPEN');
     
     const reasons: string[] = [];
@@ -109,14 +140,14 @@ export function GovernanceProvider({ children }: { children: React.ReactNode }) 
       closable: reasons.length === 0,
       reasons
     };
-  }, [checkpoints, obligations, evidence]);
+  }, [checkpoints, getObligationsByCheckpoint, evidence]);
 
   const addDecision = useCallback((decision: Decision) => {
     setDecisions(prev => [decision, ...prev]);
     
     // Add telemetry for the decision
     const trace: TelemetryTrace = {
-      id: `tr-${Math.random().toString(36).substr(2, 9)}`,
+      id: decision.traceId,
       timestamp: decision.timestamp,
       decisionId: decision.id,
       latencyMs: 50 + Math.random() * 150,
@@ -155,6 +186,7 @@ export function GovernanceProvider({ children }: { children: React.ReactNode }) 
       outcome: 'ALLOW',
       reasonCodes: ['OBLIGATION_SATISFIED'],
       obligationIds: [id],
+      checkpointId: ob.checkpointId,
       policyRefs: ['pp-1'],
       traceId: `tr-${Math.random().toString(36).substr(2, 9)}`,
       payload: { action: 'SATISFY_OBLIGATION', obligationId: id },
@@ -184,6 +216,7 @@ export function GovernanceProvider({ children }: { children: React.ReactNode }) 
       outcome: 'WARNING',
       reasonCodes: ['OBLIGATION_WAIVED', 'RISK_ACCEPTED'],
       obligationIds: [id],
+      checkpointId: ob.checkpointId,
       policyRefs: ['pp-1'],
       traceId: `tr-${Math.random().toString(36).substr(2, 9)}`,
       payload: { action: 'WAIVE_OBLIGATION', obligationId: id },
@@ -215,6 +248,7 @@ export function GovernanceProvider({ children }: { children: React.ReactNode }) 
         outcome: 'ALLOW',
         reasonCodes: ['CHECKPOINT_CLOSED', 'OBLIGATIONS_MET'],
         obligationIds: [],
+        checkpointId: id,
         policyRefs: ['pp-1'],
         traceId: `tr-${Math.random().toString(36).substr(2, 9)}`,
         payload: { action: 'CLOSE_CHECKPOINT', checkpointId: id },
@@ -234,6 +268,7 @@ export function GovernanceProvider({ children }: { children: React.ReactNode }) 
         outcome: outcome,
         reasonCodes: ['CHECKPOINT_CLOSURE_REJECTED', ...reasons.map(r => r.toUpperCase().replace(/ /g, '_'))],
         obligationIds: obligations.filter(o => o.checkpointId === id && o.status === 'OPEN').map(o => o.id),
+        checkpointId: id,
         policyRefs: ['pp-1'],
         traceId: `tr-${Math.random().toString(36).substr(2, 9)}`,
         payload: { action: 'CLOSE_CHECKPOINT_REQUEST', checkpointId: id, failureReasons: reasons },
@@ -262,6 +297,7 @@ export function GovernanceProvider({ children }: { children: React.ReactNode }) 
       outcome: outcome,
       reasonCodes: outcome === 'ALLOW' ? ['ALL_POLICIES_PASSED'] : ['OPEN_OBLIGATIONS_EXIST'],
       obligationIds: openObligations.map(o => o.id),
+      checkpointId: ws.activeCheckpointId || undefined,
       policyRefs: ['pp-1', 'pp-2', 'pp-3'],
       traceId: `tr-${Math.random().toString(36).substr(2, 9)}`,
       payload: { action: 'MANUAL_EVALUATION' },
@@ -304,6 +340,7 @@ export function GovernanceProvider({ children }: { children: React.ReactNode }) 
       outcome: 'ADVISE',
       reasonCodes: ['EVIDENCE_UPLOADED'],
       obligationIds: [obligationId],
+      checkpointId: ob.checkpointId,
       policyRefs: ['pp-1'],
       traceId: `tr-${Math.random().toString(36).substr(2, 9)}`,
       payload: { action: 'ADD_EVIDENCE', obligationId, evidenceTitle: title },
@@ -347,6 +384,10 @@ export function GovernanceProvider({ children }: { children: React.ReactNode }) 
       getWorkspaceCheckpoints,
       getWorkspaceDecisions,
       getObligationEvidence,
+      getDecisionsByCheckpoint,
+      getLatestDecisionByWorkspace,
+      getTelemetryByDecision,
+      getObligationsByCheckpoint,
       getCheckpointReadiness,
       isCheckpointClosable
     }}>

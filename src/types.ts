@@ -26,9 +26,7 @@ export interface Checkpoint {
   openedAt: string;
   closedAt?: string;
   responsible: string;
-  obligationIds: string[];
   evidenceRequired: string[];
-  decisionIds: string[];
 }
 
 export interface Obligation {
@@ -65,6 +63,7 @@ export interface Decision {
   outcome: DecisionOutcome;
   reasonCodes: string[];
   obligationIds: string[];
+  checkpointId?: string;
   policyRefs: string[];
   traceId: string;
   payload: any;

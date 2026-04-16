@@ -108,9 +108,7 @@ export const mockCheckpoints: Checkpoint[] = [
     status: 'OPEN',
     openedAt: '2024-04-01T09:00:00Z',
     responsible: 'Gilberto Tovar',
-    obligationIds: ['ob-1', 'ob-2'],
     evidenceRequired: ['Security Scan Report', 'Load Test Results'],
-    decisionIds: ['dec-1'],
   },
   {
     id: 'cp-2',
@@ -119,9 +117,7 @@ export const mockCheckpoints: Checkpoint[] = [
     status: 'BLOCKED',
     openedAt: '2024-04-05T10:30:00Z',
     responsible: 'Sarah Connor',
-    obligationIds: ['ob-3', 'ob-4', 'ob-5'],
     evidenceRequired: ['Penetration Test', 'Compliance Doc'],
-    decisionIds: ['dec-2'],
   },
   // ... more checkpoints can be added if needed, but 15 requested
 ];
@@ -136,9 +132,7 @@ for (let i = 3; i <= 15; i++) {
     openedAt: `2024-03-${10 + i}T10:00:00Z`,
     closedAt: i % 4 === 0 ? `2024-04-${10 + i}T15:00:00Z` : undefined,
     responsible: ['Alice Smith', 'Bob Jones', 'Charlie Brown'][i % 3],
-    obligationIds: [`ob-${i * 2}`, `ob-${i * 2 + 1}`],
     evidenceRequired: ['Architecture Diagram', 'Test Coverage'],
-    decisionIds: [`dec-${i}`],
   });
 }
 
@@ -201,6 +195,7 @@ export const mockDecisions: Decision[] = [
     outcome: 'ALLOW',
     reasonCodes: ['POLICY_PASSED', 'EVIDENCE_VALIDATED'],
     obligationIds: [],
+    checkpointId: 'cp-1',
     policyRefs: ['pp-1', 'pp-3'],
     traceId: 'tr-1',
     payload: { action: 'DEPLOY', target: 'PROD' },
@@ -215,6 +210,7 @@ export const mockDecisions: Decision[] = [
     outcome: 'DENY',
     reasonCodes: ['MISSING_SECURITY_SCAN', 'CRITICAL_VULNERABILITY'],
     obligationIds: ['ob-3', 'ob-4'],
+    checkpointId: 'cp-2',
     policyRefs: ['pp-1', 'pp-2'],
     traceId: 'tr-2',
     payload: { action: 'MERGE_PR', prId: '456' },
@@ -236,6 +232,7 @@ for (let i = 3; i <= 40; i++) {
     outcome: outcomes[i % 5],
     reasonCodes: ['RULE_CHECK', 'CONTEXT_EVAL'],
     obligationIds: i % 5 === 2 ? [`ob-${i}`] : [],
+    checkpointId: `cp-${(i % 15) + 1}`,
     policyRefs: [ppId],
     traceId: `tr-${i}`,
     payload: { action: 'UPDATE_CONFIG', key: 'max_retries' },
