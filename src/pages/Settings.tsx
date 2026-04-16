@@ -20,7 +20,12 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
 
+import { useParams, useNavigate } from 'react-router-dom';
+import { ComingSoon } from '../components/ComingSoon';
+
 export function Settings() {
+  const [comingSoon, setComingSoon] = React.useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
+
   return (
     <div className="max-w-4xl space-y-8">
       <div className="space-y-1">
@@ -99,7 +104,11 @@ export function Settings() {
               { name: 'Datadog', status: 'Pending', icon: Activity },
               { name: 'Slack Notifications', status: 'Disabled', icon: Bell },
             ].map((int, i) => (
-              <Card key={i} className="bg-surface border-border hover:border-accent/50 transition-colors cursor-pointer">
+              <Card 
+                key={i} 
+                className="bg-surface border-border hover:border-accent/50 transition-colors cursor-pointer"
+                onClick={() => setComingSoon({ open: true, feature: `Configure ${int.name}` })}
+              >
                 <CardContent className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded bg-card border border-border text-muted-foreground">
@@ -121,13 +130,27 @@ export function Settings() {
         </section>
 
         <div className="pt-4 flex justify-end gap-3">
-          <Button variant="ghost" className="text-muted-foreground hover:text-foreground">Discard Changes</Button>
-          <Button className="bg-accent hover:bg-accent/90 text-white gap-2">
+          <Button 
+            variant="ghost" 
+            className="text-muted-foreground hover:text-foreground"
+            onClick={() => setComingSoon({ open: true, feature: 'Discard Changes' })}
+          >
+            Discard Changes
+          </Button>
+          <Button 
+            className="bg-accent hover:bg-accent/90 text-white gap-2"
+            onClick={() => setComingSoon({ open: true, feature: 'Save Configuration' })}
+          >
             <Save className="w-4 h-4" />
             Save Configuration
           </Button>
         </div>
       </div>
+      <ComingSoon 
+        isOpen={comingSoon.open} 
+        onOpenChange={(open) => setComingSoon({ ...comingSoon, open })} 
+        featureName={comingSoon.feature} 
+      />
     </div>
   );
 }

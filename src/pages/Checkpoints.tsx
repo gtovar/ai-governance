@@ -31,9 +31,11 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { ComingSoon } from '../components/ComingSoon';
 
 export function Checkpoints() {
   const navigate = useNavigate();
+  const [comingSoon, setComingSoon] = useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
 
   return (
     <div className="space-y-6">
@@ -42,7 +44,10 @@ export function Checkpoints() {
           <h2 className="text-2xl font-bold text-foreground">Governance Checkpoints</h2>
           <p className="text-muted-foreground">Operational gates and readiness evaluations.</p>
         </div>
-        <Button className="bg-accent hover:bg-accent/90 text-white text-xs h-9">
+        <Button 
+          className="bg-accent hover:bg-accent/90 text-white text-xs h-9"
+          onClick={() => setComingSoon({ open: true, feature: 'Initiate New Checkpoint' })}
+        >
           Initiate New Checkpoint
         </Button>
       </div>
@@ -138,6 +143,11 @@ export function Checkpoints() {
           );
         })}
       </div>
+      <ComingSoon 
+        isOpen={comingSoon.open} 
+        onOpenChange={(open) => setComingSoon({ ...comingSoon, open })} 
+        featureName={comingSoon.feature} 
+      />
     </div>
   );
 }
@@ -147,6 +157,7 @@ export function CheckpointDetail() {
   const navigate = useNavigate();
   const [isSimulating, setIsSimulating] = useState(false);
   const [simulationResult, setSimulationResult] = useState<'SUCCESS' | 'FAILURE' | null>(null);
+  const [comingSoon, setComingSoon] = useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
 
   const cp = mockCheckpoints.find(c => c.id === id);
   if (!cp) return <div className="p-8 text-center text-muted-foreground">Checkpoint not found</div>;
@@ -280,7 +291,10 @@ export function CheckpointDetail() {
                         Close
                       </Button>
                       {!isSimulating && simulationResult === 'SUCCESS' && (
-                        <Button className="bg-success hover:bg-success/90 text-white text-xs">
+                        <Button 
+                          className="bg-success hover:bg-success/90 text-white text-xs"
+                          onClick={() => setComingSoon({ open: true, feature: 'Confirm Checkpoint Closure' })}
+                        >
                           Confirm Closure
                         </Button>
                       )}
@@ -412,13 +426,22 @@ export function CheckpointDetail() {
                   <div className="w-1.5 h-1.5 rounded-full bg-warning" />
                 </div>
               ))}
-              <Button variant="outline" className="w-full border-border text-accent hover:text-accent/80 text-[10px] h-8 mt-2">
+              <Button 
+                variant="outline" 
+                className="w-full border-border text-accent hover:text-accent/80 text-[10px] h-8 mt-2"
+                onClick={() => setComingSoon({ open: true, feature: 'Upload Evidence' })}
+              >
                 Upload Evidence
               </Button>
             </CardContent>
           </Card>
         </div>
       </div>
+      <ComingSoon 
+        isOpen={comingSoon.open} 
+        onOpenChange={(open) => setComingSoon({ ...comingSoon, open })} 
+        featureName={comingSoon.feature} 
+      />
     </div>
   );
 }

@@ -45,11 +45,13 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useParams, useNavigate } from 'react-router-dom';
+import { ComingSoon } from '../components/ComingSoon';
 
 export function Telemetry() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const [comingSoon, setComingSoon] = useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
 
   const avgLatency = Math.round(mockTelemetry.reduce((acc, t) => acc + t.latencyMs, 0) / mockTelemetry.length);
   const errorRate = (mockTelemetry.filter(t => t.error).length / mockTelemetry.length * 100).toFixed(1);
@@ -81,7 +83,12 @@ export function Telemetry() {
             <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
             Kernel Live
           </div>
-          <Button variant="outline" size="icon" className="bg-surface border-border text-muted-foreground hover:text-foreground h-9 w-9">
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="bg-surface border-border text-muted-foreground hover:text-foreground h-9 w-9"
+            onClick={() => setComingSoon({ open: true, feature: 'Refresh Telemetry' })}
+          >
             <RefreshCcw className="w-4 h-4" />
           </Button>
         </div>
@@ -407,6 +414,11 @@ export function Telemetry() {
           )}
         </SheetContent>
       </Sheet>
+      <ComingSoon 
+        isOpen={comingSoon.open} 
+        onOpenChange={(open) => setComingSoon({ ...comingSoon, open })} 
+        featureName={comingSoon.feature} 
+      />
     </div>
   );
 }

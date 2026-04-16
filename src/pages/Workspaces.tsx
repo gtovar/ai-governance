@@ -40,6 +40,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { ComingSoon } from '../components/ComingSoon';
 import { 
   Table, 
   TableBody, 
@@ -53,6 +54,7 @@ export function Workspaces() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const [comingSoon, setComingSoon] = useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
 
   const filteredWorkspaces = mockWorkspaces.filter(ws => 
     ws.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -78,11 +80,18 @@ export function Workspaces() {
           />
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" className="bg-surface border-border text-muted-foreground hover:text-foreground gap-2">
+          <Button 
+            variant="outline" 
+            className="bg-surface border-border text-muted-foreground hover:text-foreground gap-2"
+            onClick={() => setComingSoon({ open: true, feature: 'Workspace Filtering' })}
+          >
             <Filter className="w-4 h-4" />
             Filter
           </Button>
-          <Button className="bg-accent hover:bg-accent/90 text-white">
+          <Button 
+            className="bg-accent hover:bg-accent/90 text-white"
+            onClick={() => setComingSoon({ open: true, feature: 'Create Workspace' })}
+          >
             Create Workspace
           </Button>
         </div>
@@ -118,8 +127,8 @@ export function Workspaces() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="bg-card border-border text-foreground">
                       <DropdownMenuItem onClick={() => navigate(`/workspaces/${ws.id}`)}>View Details</DropdownMenuItem>
-                      <DropdownMenuItem>Edit Workspace</DropdownMenuItem>
-                      <DropdownMenuItem className="text-error">Archive</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setComingSoon({ open: true, feature: 'Edit Workspace' })}>Edit Workspace</DropdownMenuItem>
+                      <DropdownMenuItem className="text-error" onClick={() => setComingSoon({ open: true, feature: 'Archive Workspace' })}>Archive</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -169,12 +178,19 @@ export function Workspaces() {
           );
         })}
       </div>
+
+      <ComingSoon 
+        isOpen={comingSoon.open} 
+        onOpenChange={(open) => setComingSoon({ ...comingSoon, open })} 
+        featureName={comingSoon.feature} 
+      />
     </div>
   );
 }
 
 function WorkspaceDetail({ workspace, onBack }: { workspace: any, onBack: () => void }) {
   const navigate = useNavigate();
+  const [comingSoon, setComingSoon] = useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
   const activeCheckpoint = mockCheckpoints.find(c => c.id === workspace.activeCheckpointId);
   const workspaceCheckpoints = mockCheckpoints.filter(c => c.workspaceId === workspace.id);
   const obligations = mockObligations.filter(o => o.workspaceId === workspace.id);
@@ -203,10 +219,17 @@ function WorkspaceDetail({ workspace, onBack }: { workspace: any, onBack: () => 
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="bg-surface border-border text-foreground">
+          <Button 
+            variant="outline" 
+            className="bg-surface border-border text-foreground"
+            onClick={() => setComingSoon({ open: true, feature: 'Edit Workspace' })}
+          >
             Edit Workspace
           </Button>
-          <Button className="bg-accent hover:bg-accent/90 text-white">
+          <Button 
+            className="bg-accent hover:bg-accent/90 text-white"
+            onClick={() => setComingSoon({ open: true, feature: 'Run Governance Evaluation' })}
+          >
             Run Evaluation
           </Button>
         </div>
@@ -314,7 +337,11 @@ function WorkspaceDetail({ workspace, onBack }: { workspace: any, onBack: () => 
                         </p>
                       </div>
                     </div>
-                    <Button size="sm" className="bg-accent hover:bg-accent/90 text-white h-8 text-xs gap-2">
+                    <Button 
+                      size="sm" 
+                      className="bg-accent hover:bg-accent/90 text-white h-8 text-xs gap-2"
+                      onClick={() => setComingSoon({ open: true, feature: 'Take Recommended Action' })}
+                    >
                       Take Action
                       <ArrowRight className="w-3 h-3" />
                     </Button>
@@ -616,11 +643,21 @@ function WorkspaceDetail({ workspace, onBack }: { workspace: any, onBack: () => 
                               </div>
                             </TableCell>
                             <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                            <div className="flex items-center justify-end gap-2">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                  onClick={() => setComingSoon({ open: true, feature: 'Download Evidence' })}
+                                >
                                   <Download className="w-4 h-4" />
                                 </Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                  onClick={() => setComingSoon({ open: true, feature: 'Preview Evidence' })}
+                                >
                                   <Eye className="w-4 h-4" />
                                 </Button>
                               </div>
@@ -643,7 +680,10 @@ function WorkspaceDetail({ workspace, onBack }: { workspace: any, onBack: () => 
                     <p className="text-sm font-bold text-foreground">No Evidence Collected</p>
                     <p className="text-xs text-muted-foreground">This workspace has no evidence items uploaded yet.</p>
                   </div>
-                  <Button className="bg-accent hover:bg-accent/90 text-white text-xs h-9">
+                  <Button 
+                    className="bg-accent hover:bg-accent/90 text-white text-xs h-9"
+                    onClick={() => setComingSoon({ open: true, feature: 'Upload Evidence' })}
+                  >
                     Upload First Item
                   </Button>
                 </CardContent>
@@ -759,6 +799,11 @@ function WorkspaceDetail({ workspace, onBack }: { workspace: any, onBack: () => 
           </Card>
         </TabsContent>
       </Tabs>
+      <ComingSoon 
+        isOpen={comingSoon.open} 
+        onOpenChange={(open) => setComingSoon({ ...comingSoon, open })} 
+        featureName={comingSoon.feature} 
+      />
     </div>
   );
 }

@@ -30,9 +30,12 @@ const navItems = [
   { id: 'settings', label: 'Settings', icon: Settings, section: 'System', path: '/settings' },
 ];
 
+import { ComingSoon } from './ComingSoon';
+
 export function Sidebar() {
   const location = useLocation();
   const sections = ['Operations', 'Governance', 'System'];
+  const [comingSoon, setComingSoon] = React.useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
 
   return (
     <div className="flex flex-col h-full bg-surface border-r border-border w-[240px] text-muted-foreground">
@@ -82,7 +85,10 @@ export function Sidebar() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-card transition-colors cursor-pointer group">
+        <div 
+          className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-card transition-colors cursor-pointer group"
+          onClick={() => setComingSoon({ open: true, feature: 'User Profile Settings' })}
+        >
           <Avatar className="w-8 h-8 border border-border group-hover:border-accent/50 transition-colors">
             <AvatarImage src="https://github.com/shadcn.png" />
             <AvatarFallback>GT</AvatarFallback>
@@ -93,12 +99,18 @@ export function Sidebar() {
           </div>
         </div>
       </div>
+      <ComingSoon 
+        isOpen={comingSoon.open} 
+        onOpenChange={(open) => setComingSoon({ ...comingSoon, open })} 
+        featureName={comingSoon.feature} 
+      />
     </div>
   );
 }
 
 export function Header() {
   const location = useLocation();
+  const [comingSoon, setComingSoon] = React.useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
   
   const getTitle = () => {
     const path = location.pathname;
@@ -130,20 +142,38 @@ export function Header() {
           <Input 
             placeholder="Search traces, decisions, workspaces..." 
             className="pl-9 bg-surface border-border text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-accent h-9 text-xs"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') setComingSoon({ open: true, feature: 'Global Search' });
+            }}
           />
         </div>
         
-        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-surface h-9 w-9">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="text-muted-foreground hover:text-foreground hover:bg-surface h-9 w-9"
+          onClick={() => setComingSoon({ open: true, feature: 'Notifications' })}
+        >
           <Bell className="w-4 h-4" />
         </Button>
         
         <div className="h-4 w-[1px] bg-border mx-1" />
         
-        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground hover:bg-surface gap-2 h-9 px-3">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="text-muted-foreground hover:text-foreground hover:bg-surface gap-2 h-9 px-3"
+          onClick={() => setComingSoon({ open: true, feature: 'Kernel Health Diagnostics' })}
+        >
           <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
           <span className="text-[10px] font-bold uppercase tracking-wider">Kernel Online</span>
         </Button>
       </div>
+      <ComingSoon 
+        isOpen={comingSoon.open} 
+        onOpenChange={(open) => setComingSoon({ ...comingSoon, open })} 
+        featureName={comingSoon.feature} 
+      />
     </header>
   );
 }

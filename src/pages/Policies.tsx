@@ -26,10 +26,12 @@ import { Badge } from '@/components/ui/badge';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { ComingSoon } from '../components/ComingSoon';
 
 export function Policies() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [comingSoon, setComingSoon] = React.useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
 
   if (id) return <PolicyDetail />;
 
@@ -40,7 +42,10 @@ export function Policies() {
           <h2 className="text-2xl font-bold text-foreground">Governance Policy Packs</h2>
           <p className="text-muted-foreground">Manage the rulesets that drive the Governance Kernel decisions.</p>
         </div>
-        <Button className="bg-accent hover:bg-accent/90 text-white text-xs h-9">
+        <Button 
+          className="bg-accent hover:bg-accent/90 text-white text-xs h-9"
+          onClick={() => setComingSoon({ open: true, feature: 'Author New Policy Pack' })}
+        >
           Author New Policy Pack
         </Button>
       </div>
@@ -72,10 +77,26 @@ export function Policies() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); }}>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8 text-muted-foreground hover:text-foreground" 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        setComingSoon({ open: true, feature: 'View Policy History' });
+                      }}
+                    >
                       <History className="w-4 h-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); }}>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8 text-muted-foreground hover:text-foreground" 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        setComingSoon({ open: true, feature: 'Policy Settings' });
+                      }}
+                    >
                       <Settings2 className="w-4 h-4" />
                     </Button>
                   </div>
@@ -143,6 +164,7 @@ export function Policies() {
 export function PolicyDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [comingSoon, setComingSoon] = React.useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
 
   const pack = mockPolicyPacks.find(p => p.id === id);
   if (!pack) return <div className="p-8 text-center text-muted-foreground">Policy Pack not found</div>;
@@ -358,6 +380,11 @@ export function PolicyDetail() {
           </Card>
         </div>
       </div>
+      <ComingSoon 
+        isOpen={comingSoon.open} 
+        onOpenChange={(open) => setComingSoon({ ...comingSoon, open })} 
+        featureName={comingSoon.feature} 
+      />
     </div>
   );
 }

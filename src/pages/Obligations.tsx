@@ -32,10 +32,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { ComingSoon } from '../components/ComingSoon';
 
 export function Obligations() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [comingSoon, setComingSoon] = React.useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
 
   if (id) return <ObligationDetail />;
 
@@ -47,10 +49,17 @@ export function Obligations() {
           <p className="text-muted-foreground">Track and satisfy regulatory, security, and operational requirements.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="bg-surface border-border text-muted-foreground hover:text-foreground text-xs h-9">
+          <Button 
+            variant="outline" 
+            className="bg-surface border-border text-muted-foreground hover:text-foreground text-xs h-9"
+            onClick={() => setComingSoon({ open: true, feature: 'Export Audit Log' })}
+          >
             Export Audit Log
           </Button>
-          <Button className="bg-accent hover:bg-accent/90 text-white text-xs h-9">
+          <Button 
+            className="bg-accent hover:bg-accent/90 text-white text-xs h-9"
+            onClick={() => setComingSoon({ open: true, feature: 'Create Obligation' })}
+          >
             Create Obligation
           </Button>
         </div>
@@ -113,10 +122,28 @@ export function Obligations() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-success hover:bg-success/10" title="Mark Satisfied" onClick={(e) => { e.stopPropagation(); }}>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-muted-foreground hover:text-success hover:bg-success/10" 
+                        title="Mark Satisfied" 
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          setComingSoon({ open: true, feature: 'Mark Obligation Satisfied' });
+                        }}
+                      >
                         <CheckCircle2 className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-accent hover:bg-accent/10" title="Upload Evidence" onClick={(e) => { e.stopPropagation(); }}>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-muted-foreground hover:text-accent hover:bg-accent/10" 
+                        title="Upload Evidence" 
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          setComingSoon({ open: true, feature: 'Upload Evidence' });
+                        }}
+                      >
                         <Paperclip className="w-4 h-4" />
                       </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-card" title="View Details">
@@ -130,6 +157,11 @@ export function Obligations() {
           </TableBody>
         </Table>
       </Card>
+      <ComingSoon 
+        isOpen={comingSoon.open} 
+        onOpenChange={(open) => setComingSoon({ ...comingSoon, open })} 
+        featureName={comingSoon.feature} 
+      />
     </div>
   );
 }
@@ -137,6 +169,7 @@ export function Obligations() {
 export function ObligationDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [comingSoon, setComingSoon] = React.useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
 
   const ob = mockObligations.find(o => o.id === id);
   if (!ob) return <div className="p-8 text-center text-muted-foreground">Obligation not found</div>;
@@ -170,10 +203,17 @@ export function ObligationDetail() {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <Button variant="outline" className="bg-surface border-border text-muted-foreground hover:text-foreground text-xs h-9">
+              <Button 
+                variant="outline" 
+                className="bg-surface border-border text-muted-foreground hover:text-foreground text-xs h-9"
+                onClick={() => setComingSoon({ open: true, feature: 'Request Waiver' })}
+              >
                 Request Waiver
               </Button>
-              <Button className="bg-accent hover:bg-accent/90 text-white text-xs h-9 gap-2">
+              <Button 
+                className="bg-accent hover:bg-accent/90 text-white text-xs h-9 gap-2"
+                onClick={() => setComingSoon({ open: true, feature: 'Upload Evidence' })}
+              >
                 <Paperclip className="w-4 h-4" />
                 Upload Evidence
               </Button>
@@ -217,7 +257,12 @@ export function ObligationDetail() {
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="text-[10px] bg-success/5 text-success border-success/20">VERIFIED</Badge>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                          onClick={() => setComingSoon({ open: true, feature: 'Download Evidence' })}
+                        >
                           <Download className="w-4 h-4" />
                         </Button>
                       </div>
@@ -235,7 +280,10 @@ export function ObligationDetail() {
                     <p className="text-sm font-bold text-foreground">No Evidence Provided</p>
                     <p className="text-xs text-muted-foreground">This obligation requires evidence items to be satisfied.</p>
                   </div>
-                  <Button className="bg-accent hover:bg-accent/90 text-white text-xs h-9">
+                  <Button 
+                    className="bg-accent hover:bg-accent/90 text-white text-xs h-9"
+                    onClick={() => setComingSoon({ open: true, feature: 'Upload Evidence' })}
+                  >
                     Upload First Item
                   </Button>
                 </CardContent>
@@ -295,6 +343,11 @@ export function ObligationDetail() {
           </Card>
         </div>
       </div>
+      <ComingSoon 
+        isOpen={comingSoon.open} 
+        onOpenChange={(open) => setComingSoon({ ...comingSoon, open })} 
+        featureName={comingSoon.feature} 
+      />
     </div>
   );
 }
