@@ -9,6 +9,7 @@ import { DecisionLog } from './pages/DecisionLog';
 import { Policies } from './pages/Policies';
 import { Telemetry } from './pages/Telemetry';
 import { Settings } from './pages/Settings';
+import { GovernanceProvider } from './context/GovernanceContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { useLocation } from 'react-router-dom';
 
@@ -50,17 +51,19 @@ function AnimatedRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="flex h-screen bg-background text-foreground overflow-hidden font-sans selection:bg-accent/30">
-        <Sidebar />
-        
-        <main className="flex-1 flex flex-col overflow-hidden relative">
-          <Header />
+      <GovernanceProvider>
+        <div className="flex h-screen bg-background text-foreground overflow-hidden font-sans selection:bg-accent/30">
+          <Sidebar />
           
-          <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-            <AnimatedRoutes />
-          </div>
-        </main>
-      </div>
+          <main className="flex-1 flex flex-col overflow-hidden relative">
+            <Header />
+            
+            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+              <AnimatedRoutes />
+            </div>
+          </main>
+        </div>
+      </GovernanceProvider>
     </BrowserRouter>
   );
 }

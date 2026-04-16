@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { mockTelemetry, mockDecisions, mockWorkspaces, mockPolicyPacks } from '../mockData';
+import { useGovernance } from '../context/GovernanceContext';
 import { OutcomeBadge } from '../components/Badges';
 import { 
   Activity, 
@@ -50,26 +50,27 @@ import { ComingSoon } from '../components/ComingSoon';
 export function Telemetry() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { telemetry, decisions, workspaces, policyPacks } = useGovernance();
   const [searchQuery, setSearchQuery] = useState('');
   const [comingSoon, setComingSoon] = useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
 
-  const avgLatency = Math.round(mockTelemetry.reduce((acc, t) => acc + t.latencyMs, 0) / mockTelemetry.length);
-  const errorRate = (mockTelemetry.filter(t => t.error).length / mockTelemetry.length * 100).toFixed(1);
+  const avgLatency = telemetry.length > 0 ? Math.round(telemetry.reduce((acc, t) => acc + t.latencyMs, 0) / telemetry.length) : 0;
+  const errorRate = telemetry.length > 0 ? (telemetry.filter(t => t.error).length / telemetry.length * 100).toFixed(1) : "0.0";
 
-  const latencyData = mockTelemetry.map((t, i) => ({
+  const latencyData = telemetry.map((t, i) => ({
     time: new Date(t.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     latency: Math.round(t.latencyMs),
     p95: Math.round(t.latencyMs * 1.2),
   }));
 
-  const filteredTelemetry = mockTelemetry.filter(t => 
+  const filteredTelemetry = telemetry.filter(t => 
     t.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
     t.decisionId.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const selectedTrace = mockTelemetry.find(t => t.id === id);
-  const relatedDecision = selectedTrace ? mockDecisions.find(d => d.id === selectedTrace.decisionId) : null;
-  const relatedWorkspace = selectedTrace ? mockWorkspaces.find(w => w.id === selectedTrace.workspaceId) : null;
+  const selectedTrace = telemetry.find(t => t.id === id);
+  const relatedDecision = selectedTrace ? decisions.find(d => d.id === selectedTrace.decisionId) : null;
+  const relatedWorkspace = selectedTrace ? workspaces.find(w => w.id === selectedTrace.workspaceId) : null;
 
   return (
     <div className="space-y-8">
@@ -351,7 +352,7 @@ export function Telemetry() {
                           <div>
                             <p className="text-[9px] text-muted-foreground uppercase">Workspace</p>
                             <p className="text-xs font-bold text-foreground">
-                              {mockWorkspaces.find(w => w.id === selectedTrace.workspaceId)?.name || 'Unknown Workspace'}
+                              {workspaces.find(w => w.id === selectedTrace.workspaceId)?.name || 'Unknown Workspace'}
                             </p>
                           </div>
                         </div>
@@ -370,7 +371,7 @@ export function Telemetry() {
                       {[
                         { step: "Intent Received", time: "0ms", status: "success", detail: `Intent ID: ${relatedDecision?.intentId || 'N/A'}` },
                         { step: "Context Hydration", time: "12ms", status: "success", detail: `Workspace: ${relatedWorkspace?.name || 'Unknown'}` },
-                        { step: "Policy Pack Loading", time: "45ms", status: "success", detail: `Packs: ${relatedDecision?.policyRefs.map(id => mockPolicyPacks.find(p => p.id === id)?.name || id).join(', ') || 'None'}` },
+                        { step: "Policy Pack Loading", time: "45ms", status: "success", detail: `Packs: ${relatedDecision?.policyRefs.map(id => policyPacks.find(p => p.id === id)?.name || id).join(', ') || 'None'}` },
                         { step: "Rule Evaluation", time: "128ms", status: "success", detail: `${relatedDecision?.policyRefs.length || 0} policy packs evaluated` },
                         { step: "Outcome Generation", time: "142ms", status: "success", detail: `Result: ${selectedTrace.outcome}` },
                         { step: "Log Persistence", time: "156ms", status: "success", detail: `Decision ID: ${selectedTrace.decisionId}` }

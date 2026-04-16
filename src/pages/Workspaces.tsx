@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { mockWorkspaces, mockCheckpoints, mockObligations, mockDecisions, mockTelemetry, mockEvidence, mockPolicyPacks } from '../mockData';
+import { useGovernance } from '../context/GovernanceContext';
 import { StatusBadge, SeverityBadge, OutcomeBadge } from '../components/Badges';
 import { 
   Search, 
@@ -53,15 +53,16 @@ import {
 export function Workspaces() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { workspaces, decisions, obligations, createWorkspace } = useGovernance();
   const [searchQuery, setSearchQuery] = useState('');
   const [comingSoon, setComingSoon] = useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
 
-  const filteredWorkspaces = mockWorkspaces.filter(ws => 
+  const filteredWorkspaces = workspaces.filter(ws => 
     ws.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     ws.owner.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const selectedWorkspace = mockWorkspaces.find(ws => ws.id === id);
+  const selectedWorkspace = workspaces.find(ws => ws.id === id);
 
   if (selectedWorkspace) {
     return <WorkspaceDetail workspace={selectedWorkspace} onBack={() => navigate('/workspaces')} />;
@@ -90,7 +91,7 @@ export function Workspaces() {
           </Button>
           <Button 
             className="bg-accent hover:bg-accent/90 text-white"
-            onClick={() => setComingSoon({ open: true, feature: 'Create Workspace' })}
+            onClick={() => createWorkspace({ name: 'New Service API', owner: 'Platform Team', description: 'Automatically generated workspace for testing.' })}
           >
             Create Workspace
           </Button>
@@ -99,9 +100,9 @@ export function Workspaces() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {filteredWorkspaces.map((ws) => {
-          const wsDecisions = mockDecisions.filter(d => d.workspaceId === ws.id);
+          const wsDecisions = decisions.filter(d => d.workspaceId === ws.id);
           const latestDecision = [...wsDecisions].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
-          const wsObligations = mockObligations.filter(o => o.workspaceId === ws.id);
+          const wsObligations = obligations.filter(o => o.workspaceId === ws.id);
           const openObligationsCount = wsObligations.filter(o => o.status === 'OPEN').length;
 
           return (
@@ -190,17 +191,19 @@ export function Workspaces() {
 
 function WorkspaceDetail({ workspace, onBack }: { workspace: any, onBack: () => void }) {
   const navigate = useNavigate();
+  const { checkpoints, obligations, decisions, telemetry, evidence, policyPacks, runEvaluation } = useGovernance();
   const [comingSoon, setComingSoon] = useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
-  const activeCheckpoint = mockCheckpoints.find(c => c.id === workspace.activeCheckpointId);
-  const workspaceCheckpoints = mockCheckpoints.filter(c => c.workspaceId === workspace.id);
-  const obligations = mockObligations.filter(o => o.workspaceId === workspace.id);
-  const decisions = mockDecisions.filter(d => d.workspaceId === workspace.id);
-  const telemetry = mockTelemetry.filter(t => t.workspaceId === workspace.id);
-  const evidence = mockEvidence.filter(e => obligations.some(o => o.id === e.obligationId));
+  
+  const activeCheckpoint = checkpoints.find(c => c.id === workspace.activeCheckpointId);
+  const workspaceCheckpoints = checkpoints.filter(c => c.workspaceId === workspace.id);
+  const wsObligations = obligations.filter(o => o.workspaceId === workspace.id);
+  const wsDecisions = decisions.filter(d => d.workspaceId === workspace.id);
+  const wsTelemetry = telemetry.filter(t => t.workspaceId === workspace.id);
+  const wsEvidence = evidence.filter(e => wsObligations.some(o => o.id === e.obligationId));
 
-  const openObligations = obligations.filter(o => o.status === 'OPEN');
-  const satisfiedObligations = obligations.filter(o => o.status === 'SATISFIED');
-  const evidenceCoverage = obligations.length > 0 ? Math.round((satisfiedObligations.length / obligations.length) * 100) : 0;
+  const openObligations = wsObligations.filter(o => o.status === 'OPEN');
+  const satisfiedObligations = wsObligations.filter(o => o.status === 'SATISFIED');
+  const evidenceCoverage = wsObligations.length > 0 ? Math.round((satisfiedObligations.length / wsObligations.length) * 100) : 0;
 
   return (
     <div className="space-y-6">
@@ -228,7 +231,7 @@ function WorkspaceDetail({ workspace, onBack }: { workspace: any, onBack: () => 
           </Button>
           <Button 
             className="bg-accent hover:bg-accent/90 text-white"
-            onClick={() => setComingSoon({ open: true, feature: 'Run Governance Evaluation' })}
+            onClick={() => runEvaluation(workspace.id)}
           >
             Run Evaluation
           </Button>
@@ -492,7 +495,7 @@ function WorkspaceDetail({ workspace, onBack }: { workspace: any, onBack: () => 
               </TableHeader>
               <TableBody>
                 {workspaceCheckpoints.map((cp) => {
-                  const cpObligations = mockObligations.filter(o => cp.obligationIds.includes(o.id));
+                  const cpObligations = obligations.filter(o => cp.obligationIds.includes(o.id));
                   const satisfiedCount = cpObligations.filter(o => o.status === 'SATISFIED').length;
                   const readiness = cpObligations.length > 0 ? Math.round((satisfiedCount / cpObligations.length) * 100) : 0;
 
@@ -549,8 +552,8 @@ function WorkspaceDetail({ workspace, onBack }: { workspace: any, onBack: () => 
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {obligations.map((ob) => {
-                  const obEvidence = mockEvidence.filter(e => e.obligationId === ob.id);
+                {wsObligations.map((ob) => {
+                  const obEvidence = evidence.filter(e => e.obligationId === ob.id);
                   const isOverdue = new Date(ob.dueDate) < new Date() && ob.status === 'OPEN';
 
                   return (
@@ -596,8 +599,8 @@ function WorkspaceDetail({ workspace, onBack }: { workspace: any, onBack: () => 
 
         <TabsContent value="evidence">
           <div className="space-y-6">
-            {obligations.map((ob) => {
-              const obEvidence = mockEvidence.filter(e => e.obligationId === ob.id);
+            {wsObligations.map((ob) => {
+              const obEvidence = evidence.filter(e => e.obligationId === ob.id);
               if (obEvidence.length === 0) return null;
 
               return (
@@ -670,7 +673,7 @@ function WorkspaceDetail({ workspace, onBack }: { workspace: any, onBack: () => 
                 </Card>
               );
             })}
-            {evidence.length === 0 && (
+            {wsEvidence.length === 0 && (
               <Card className="bg-surface border-border border-dashed">
                 <CardContent className="p-12 flex flex-col items-center justify-center text-center space-y-4">
                   <div className="w-12 h-12 rounded-full bg-card flex items-center justify-center text-muted-foreground border border-border">
@@ -706,7 +709,7 @@ function WorkspaceDetail({ workspace, onBack }: { workspace: any, onBack: () => 
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {decisions.map((d) => (
+                {wsDecisions.map((d) => (
                   <TableRow key={d.id} className="border-border hover:bg-card/30 transition-colors group cursor-pointer" onClick={() => navigate(`/decision-log/${d.id}`)}>
                     <TableCell className="py-4">
                       <OutcomeBadge outcome={d.outcome} />
@@ -723,7 +726,7 @@ function WorkspaceDetail({ workspace, onBack }: { workspace: any, onBack: () => 
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {d.policyRefs.map((pId, i) => {
-                          const pack = mockPolicyPacks.find(p => p.id === pId);
+                          const pack = policyPacks.find(p => p.id === pId);
                           return (
                             <Badge key={i} variant="secondary" className="text-[8px] px-1 py-0 h-4">
                               {pack?.name || pId}
@@ -761,7 +764,7 @@ function WorkspaceDetail({ workspace, onBack }: { workspace: any, onBack: () => 
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {telemetry.map((t) => (
+                {wsTelemetry.map((t) => (
                   <TableRow key={t.id} className="border-border hover:bg-card/30 transition-colors group cursor-pointer" onClick={() => navigate(`/telemetry/${t.id}`)}>
                     <TableCell className="py-4">
                       <span className="text-xs font-mono text-foreground group-hover:text-accent transition-colors">{t.id}</span>

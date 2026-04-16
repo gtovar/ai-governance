@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { mockDecisions, mockWorkspaces, mockCheckpoints, mockObligations, mockPolicyPacks } from '../mockData';
+import { useGovernance } from '../context/GovernanceContext';
 import { OutcomeBadge, SeverityBadge } from '../components/Badges';
 import { 
   FileText, 
@@ -44,13 +44,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 export function DecisionLog() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { decisions, workspaces, policyPacks, obligations } = useGovernance();
   const [searchQuery, setSearchQuery] = useState('');
   const [outcomeFilter, setOutcomeFilter] = useState<string | null>(null);
   const [actorFilter, setActorFilter] = useState<string | null>(null);
   const [workspaceFilter, setWorkspaceFilter] = useState<string | null>(null);
   const [policyFilter, setPolicyFilter] = useState<string | null>(null);
 
-  const filteredDecisions = mockDecisions.filter(d => {
+  const filteredDecisions = decisions.filter(d => {
     const matchesSearch = d.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       d.traceId.toLowerCase().includes(searchQuery.toLowerCase()) ||
       d.actor.toLowerCase().includes(searchQuery.toLowerCase());
@@ -63,11 +64,11 @@ export function DecisionLog() {
     return matchesSearch && matchesOutcome && matchesActor && matchesWorkspace && matchesPolicy;
   });
 
-  const selectedDecision = mockDecisions.find(d => d.id === id);
+  const selectedDecision = decisions.find(d => d.id === id);
 
   const outcomes = ['ALLOW', 'DENY', 'REQUIRE_EVIDENCE', 'ADVISE', 'WARNING'];
-  const actors = Array.from(new Set(mockDecisions.map(d => d.actor)));
-  const policyPackIds = Array.from(new Set(mockDecisions.flatMap(d => d.policyRefs)));
+  const actors = Array.from(new Set(decisions.map(d => d.actor)));
+  const policyPackIds = Array.from(new Set(decisions.flatMap(d => d.policyRefs)));
 
   return (
     <div className="space-y-6">
@@ -120,12 +121,12 @@ export function DecisionLog() {
             <DropdownMenuTrigger asChild>
               <Button variant={workspaceFilter ? 'secondary' : 'outline'} size="sm" className="h-7 text-[10px] rounded-full gap-1">
                 <Layers className="w-3 h-3" />
-                {workspaceFilter ? mockWorkspaces.find(w => w.id === workspaceFilter)?.name : 'Workspace'}
+                {workspaceFilter ? workspaces.find(w => w.id === workspaceFilter)?.name : 'Workspace'}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="bg-card border-border text-foreground">
               <DropdownMenuItem onClick={() => setWorkspaceFilter(null)}>All Workspaces</DropdownMenuItem>
-              {mockWorkspaces.map(ws => (
+              {workspaces.map(ws => (
                 <DropdownMenuItem key={ws.id} onClick={() => setWorkspaceFilter(ws.id)}>{ws.name}</DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -135,13 +136,13 @@ export function DecisionLog() {
             <DropdownMenuTrigger asChild>
               <Button variant={policyFilter ? 'secondary' : 'outline'} size="sm" className="h-7 text-[10px] rounded-full gap-1">
                 <Shield className="w-3 h-3" />
-                {policyFilter ? mockPolicyPacks.find(p => p.id === policyFilter)?.name : 'Policy Pack'}
+                {policyFilter ? policyPacks.find(p => p.id === policyFilter)?.name : 'Policy Pack'}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="bg-card border-border text-foreground">
               <DropdownMenuItem onClick={() => setPolicyFilter(null)}>All Policies</DropdownMenuItem>
               {policyPackIds.map(id => {
-                const pack = mockPolicyPacks.find(p => p.id === id);
+                const pack = policyPacks.find(p => p.id === id);
                 return (
                   <DropdownMenuItem key={id} onClick={() => setPolicyFilter(id)}>
                     {pack?.name || id}
@@ -183,7 +184,7 @@ export function DecisionLog() {
             </thead>
             <tbody className="divide-y divide-border/50">
               {filteredDecisions.map((decision) => {
-                const workspace = mockWorkspaces.find(w => w.id === decision.workspaceId);
+                const workspace = workspaces.find(w => w.id === decision.workspaceId);
                 return (
                   <tr 
                     key={decision.id} 
@@ -292,7 +293,7 @@ export function DecisionLog() {
                       <div className="p-3 rounded-lg bg-surface border border-border space-y-1 cursor-pointer hover:border-accent/50 transition-colors" onClick={() => navigate(`/workspaces/${selectedDecision.workspaceId}`)}>
                         <p className="text-[9px] text-muted-foreground uppercase">Workspace</p>
                         <p className="text-xs font-bold text-foreground flex items-center gap-1">
-                          {mockWorkspaces.find(w => w.id === selectedDecision.workspaceId)?.name}
+                          {workspaces.find(w => w.id === selectedDecision.workspaceId)?.name}
                           <ExternalLink className="w-2 h-2 text-muted-foreground" />
                         </p>
                       </div>
@@ -319,7 +320,7 @@ export function DecisionLog() {
                         </p>
                         <div className="space-y-2 pt-2">
                           {selectedDecision.obligationIds.map((obId: string) => {
-                            const ob = mockObligations.find(o => o.id === obId);
+                            const ob = obligations.find(o => o.id === obId);
                             return (
                               <div key={obId} className="flex items-center justify-between p-2 rounded bg-card border border-border cursor-pointer hover:border-accent/50 transition-colors" onClick={() => navigate(`/obligations/${obId}`)}>
                                 <span className="text-[10px] font-medium text-foreground">{ob?.title || obId}</span>
@@ -351,7 +352,7 @@ export function DecisionLog() {
                     </h4>
                     <div className="space-y-2">
                       {selectedDecision.policyRefs.map((pId: string, i: number) => {
-                        const pack = mockPolicyPacks.find(p => p.id === pId);
+                        const pack = policyPacks.find(p => p.id === pId);
                         return (
                           <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-surface border border-border hover:border-accent/50 transition-colors cursor-pointer group" onClick={() => navigate(`/policies/${pId}`)}>
                             <div className="flex items-center gap-3">

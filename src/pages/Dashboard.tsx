@@ -1,12 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { 
-  mockWorkspaces, 
-  mockCheckpoints, 
-  mockObligations, 
-  mockDecisions, 
-  mockTelemetry 
-} from '../mockData';
+import { useGovernance } from '../context/GovernanceContext';
 import { 
   Briefcase, 
   CheckCircle2, 
@@ -34,10 +28,12 @@ import { useNavigate, Link } from 'react-router-dom';
 
 export function Dashboard() {
   const navigate = useNavigate();
-  const blockedWorkspaces = mockWorkspaces.filter(w => w.status === 'BLOCKED');
-  const openCheckpoints = mockCheckpoints.filter(c => c.status === 'OPEN');
-  const pendingObligations = mockObligations.filter(o => o.status === 'OPEN');
-  const criticalDecisions = mockDecisions.filter(d => d.outcome === 'DENY').slice(0, 5);
+  const { workspaces, checkpoints, obligations, decisions } = useGovernance();
+
+  const blockedWorkspaces = workspaces.filter(w => w.status === 'BLOCKED');
+  const openCheckpoints = checkpoints.filter(c => c.status === 'OPEN');
+  const pendingObligations = obligations.filter(o => o.status === 'OPEN');
+  const criticalDecisions = decisions.filter(d => d.outcome === 'DENY').slice(0, 5);
 
   const stats = [
     { label: 'Blocked Workspaces', value: blockedWorkspaces.length, icon: ShieldAlert, color: 'text-error', desc: 'Requires immediate intervention', path: '/workspaces' },
@@ -157,7 +153,7 @@ export function Dashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/50">
-                    {mockDecisions.slice(0, 6).map((decision) => (
+                    {decisions.slice(0, 6).map((decision) => (
                       <tr 
                         key={decision.id} 
                         className="hover:bg-card/30 transition-colors group cursor-pointer"
@@ -167,7 +163,7 @@ export function Dashboard() {
                           <OutcomeBadge outcome={decision.outcome} />
                         </td>
                         <td className="py-3 px-4">
-                          <span className="text-xs font-medium text-foreground">{mockWorkspaces.find(w => w.id === decision.workspaceId)?.name}</span>
+                          <span className="text-xs font-medium text-foreground">{workspaces.find(w => w.id === decision.workspaceId)?.name}</span>
                         </td>
                         <td className="py-3 px-4">
                           <span className="text-[10px] font-mono text-muted-foreground truncate max-w-[150px] block">
@@ -231,7 +227,7 @@ export function Dashboard() {
             </CardHeader>
             <CardContent className="p-4 space-y-4">
               <div className="space-y-3">
-                {mockCheckpoints.filter(c => c.status === 'OPEN').slice(0, 3).map((cp) => (
+                {checkpoints.filter(c => c.status === 'OPEN').slice(0, 3).map((cp) => (
                   <div key={cp.id} className="space-y-1 cursor-pointer group" onClick={() => navigate(`/checkpoints/${cp.id}`)}>
                     <div className="flex items-center justify-between text-[10px]">
                       <span className="font-medium text-foreground/80 group-hover:text-accent transition-colors">{cp.name}</span>

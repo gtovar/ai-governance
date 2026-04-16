@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { mockPolicyPacks, mockDecisions } from '../mockData';
+import { useGovernance } from '../context/GovernanceContext';
 import { StatusBadge, OutcomeBadge } from '../components/Badges';
 import { 
   ShieldCheck, 
@@ -31,6 +31,7 @@ import { ComingSoon } from '../components/ComingSoon';
 export function Policies() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { policyPacks, decisions } = useGovernance();
   const [comingSoon, setComingSoon] = React.useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
 
   if (id) return <PolicyDetail />;
@@ -51,8 +52,8 @@ export function Policies() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {mockPolicyPacks.map((pack) => {
-          const relatedDecisions = mockDecisions.filter(d => d.policyRefs.includes(pack.id));
+        {policyPacks.map((pack) => {
+          const relatedDecisions = decisions.filter(d => d.policyRefs.includes(pack.id));
           const denialCount = relatedDecisions.filter(d => d.outcome === 'DENY').length;
           const complianceScore = relatedDecisions.length > 0 ? Math.round(((relatedDecisions.length - denialCount) / relatedDecisions.length) * 1000) / 10 : 100;
 
@@ -164,12 +165,13 @@ export function Policies() {
 export function PolicyDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { policyPacks, decisions } = useGovernance();
   const [comingSoon, setComingSoon] = React.useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
 
-  const pack = mockPolicyPacks.find(p => p.id === id);
+  const pack = policyPacks.find(p => p.id === id);
   if (!pack) return <div className="p-8 text-center text-muted-foreground">Policy Pack not found</div>;
 
-  const relatedDecisions = mockDecisions.filter(d => d.policyRefs.includes(pack.id));
+  const relatedDecisions = decisions.filter(d => d.policyRefs.includes(pack.id));
   const blockingRules = pack.rules.filter(r => r.mode === 'BLOCKING').length;
   const warningRules = pack.rules.filter(r => r.mode === 'WARNING').length;
   const advisoryRules = pack.rules.filter(r => r.mode === 'ADVISORY').length;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { mockObligations, mockWorkspaces, mockEvidence, mockDecisions } from '../mockData';
+import { useGovernance } from '../context/GovernanceContext';
 import { StatusBadge, SeverityBadge, OutcomeBadge } from '../components/Badges';
 import { 
   ShieldAlert, 
@@ -37,6 +37,7 @@ import { ComingSoon } from '../components/ComingSoon';
 export function Obligations() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { obligations, workspaces, evidence, satisfyObligation } = useGovernance();
   const [comingSoon, setComingSoon] = React.useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
 
   if (id) return <ObligationDetail />;
@@ -79,10 +80,10 @@ export function Obligations() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockObligations.map((ob) => {
-              const workspace = mockWorkspaces.find(w => w.id === ob.workspaceId);
+            {obligations.map((ob) => {
+              const workspace = workspaces.find(w => w.id === ob.workspaceId);
               const isOverdue = new Date(ob.dueDate) < new Date() && ob.status === 'OPEN';
-              const evidenceCount = mockEvidence.filter(e => e.obligationId === ob.id).length;
+              const evidenceCount = evidence.filter(e => e.obligationId === ob.id).length;
 
               return (
                 <TableRow key={ob.id} className="border-border hover:bg-card/30 transition-colors group cursor-pointer" onClick={() => navigate(`/obligations/${ob.id}`)}>
@@ -129,7 +130,7 @@ export function Obligations() {
                         title="Mark Satisfied" 
                         onClick={(e) => { 
                           e.stopPropagation(); 
-                          setComingSoon({ open: true, feature: 'Mark Obligation Satisfied' });
+                          satisfyObligation(ob.id);
                         }}
                       >
                         <CheckCircle2 className="w-4 h-4" />
@@ -169,14 +170,15 @@ export function Obligations() {
 export function ObligationDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { obligations, workspaces, evidence, decisions, satisfyObligation, waiveObligation } = useGovernance();
   const [comingSoon, setComingSoon] = React.useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
 
-  const ob = mockObligations.find(o => o.id === id);
+  const ob = obligations.find(o => o.id === id);
   if (!ob) return <div className="p-8 text-center text-muted-foreground">Obligation not found</div>;
 
-  const workspace = mockWorkspaces.find(w => w.id === ob.workspaceId);
-  const evidence = mockEvidence.filter(e => e.obligationId === ob.id);
-  const relatedDecisions = mockDecisions.filter(d => d.obligationIds.includes(ob.id));
+  const workspace = workspaces.find(w => w.id === ob.workspaceId);
+  const obEvidence = evidence.filter(e => e.obligationId === ob.id);
+  const relatedDecisions = decisions.filter(d => d.obligationIds.includes(ob.id));
 
   return (
     <div className="space-y-6">
@@ -206,16 +208,16 @@ export function ObligationDetail() {
               <Button 
                 variant="outline" 
                 className="bg-surface border-border text-muted-foreground hover:text-foreground text-xs h-9"
-                onClick={() => setComingSoon({ open: true, feature: 'Request Waiver' })}
+                onClick={() => waiveObligation(ob.id)}
               >
                 Request Waiver
               </Button>
               <Button 
                 className="bg-accent hover:bg-accent/90 text-white text-xs h-9 gap-2"
-                onClick={() => setComingSoon({ open: true, feature: 'Upload Evidence' })}
+                onClick={() => satisfyObligation(ob.id)}
               >
-                <Paperclip className="w-4 h-4" />
-                Upload Evidence
+                <CheckCircle2 className="w-4 h-4" />
+                Mark Satisfied
               </Button>
             </div>
           </div>
@@ -239,9 +241,9 @@ export function ObligationDetail() {
               <Paperclip className="w-5 h-5 text-accent" />
               Evidence Audit Trail
             </h3>
-            {evidence.length > 0 ? (
+            {obEvidence.length > 0 ? (
               <div className="grid grid-cols-1 gap-3">
-                {evidence.map((ev) => (
+                {obEvidence.map((ev) => (
                   <Card key={ev.id} className="bg-surface border-border hover:border-accent/30 transition-colors">
                     <CardContent className="p-4 flex items-center justify-between">
                       <div className="flex items-center gap-4">

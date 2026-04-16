@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { mockCheckpoints, mockWorkspaces, mockObligations, mockDecisions } from '../mockData';
+import { useGovernance } from '../context/GovernanceContext';
 import { StatusBadge, OutcomeBadge } from '../components/Badges';
 import { 
   CheckCircle2, 
@@ -35,6 +35,7 @@ import { ComingSoon } from '../components/ComingSoon';
 
 export function Checkpoints() {
   const navigate = useNavigate();
+  const { checkpoints, workspaces, obligations, decisions } = useGovernance();
   const [comingSoon, setComingSoon] = useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
 
   return (
@@ -53,11 +54,11 @@ export function Checkpoints() {
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        {mockCheckpoints.map((cp) => {
-          const workspace = mockWorkspaces.find(w => w.id === cp.workspaceId);
-          const obligations = mockObligations.filter(o => cp.obligationIds.includes(o.id));
-          const satisfiedObligations = obligations.filter(o => o.status === 'SATISFIED').length;
-          const progress = cp.status === 'CLOSED' ? 100 : Math.round((satisfiedObligations / obligations.length) * 100) || 30;
+        {checkpoints.map((cp) => {
+          const workspace = workspaces.find(w => w.id === cp.workspaceId);
+          const cpObligations = obligations.filter(o => cp.obligationIds.includes(o.id));
+          const satisfiedObligations = cpObligations.filter(o => o.status === 'SATISFIED').length;
+          const progress = cp.status === 'CLOSED' ? 100 : Math.round((satisfiedObligations / cpObligations.length) * 100) || 30;
 
           return (
             <Card key={cp.id} className="bg-surface border-border hover:border-accent/30 transition-all duration-300 group overflow-hidden cursor-pointer" onClick={() => navigate(`/checkpoints/${cp.id}`)}>
@@ -94,8 +95,8 @@ export function Checkpoints() {
                       <Progress value={progress} className="h-1.5 bg-card" />
                       <div className="flex gap-4 pt-2">
                         <div className="flex items-center gap-2">
-                          <CheckCircle2 className={cn("w-3 h-3", satisfiedObligations === obligations.length ? "text-success" : "text-muted-foreground")} />
-                          <span className="text-[10px] text-muted-foreground">{satisfiedObligations}/{obligations.length} Obligations</span>
+                          <CheckCircle2 className={cn("w-3 h-3", satisfiedObligations === cpObligations.length ? "text-success" : "text-muted-foreground")} />
+                          <span className="text-[10px] text-muted-foreground">{satisfiedObligations}/{cpObligations.length} Obligations</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <FileText className="w-3 h-3 text-muted-foreground" />
@@ -123,8 +124,8 @@ export function Checkpoints() {
                       <p className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider">Latest Decision</p>
                       {cp.decisionIds.length > 0 ? (
                         <div className="flex items-center gap-2">
-                          <OutcomeBadge outcome={mockDecisions.find(d => d.id === cp.decisionIds[0])?.outcome || 'ALLOW'} />
-                          <span className="text-[10px] font-mono text-muted-foreground">tr-eval-99</span>
+                          <OutcomeBadge outcome={decisions.find(d => d.id === cp.decisionIds[0])?.outcome || 'ALLOW'} />
+                          <span className="text-[10px] font-mono text-muted-foreground">{cp.decisionIds[0]}</span>
                         </div>
                       ) : (
                         <span className="text-[10px] text-muted-foreground italic">No evaluations yet</span>
@@ -155,17 +156,18 @@ export function Checkpoints() {
 export function CheckpointDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { checkpoints, workspaces, obligations, decisions, requestCheckpointClosure } = useGovernance();
   const [isSimulating, setIsSimulating] = useState(false);
   const [simulationResult, setSimulationResult] = useState<'SUCCESS' | 'FAILURE' | null>(null);
   const [comingSoon, setComingSoon] = useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
 
-  const cp = mockCheckpoints.find(c => c.id === id);
+  const cp = checkpoints.find(c => c.id === id);
   if (!cp) return <div className="p-8 text-center text-muted-foreground">Checkpoint not found</div>;
 
-  const workspace = mockWorkspaces.find(w => w.id === cp.workspaceId);
-  const obligations = mockObligations.filter(o => cp.obligationIds.includes(o.id));
-  const satisfiedObligations = obligations.filter(o => o.status === 'SATISFIED').length;
-  const progress = cp.status === 'CLOSED' ? 100 : Math.round((satisfiedObligations / obligations.length) * 100) || 30;
+  const workspace = workspaces.find(w => w.id === cp.workspaceId);
+  const cpObligations = obligations.filter(o => cp.obligationIds.includes(o.id));
+  const satisfiedObligations = cpObligations.filter(o => o.status === 'SATISFIED').length;
+  const progress = cp.status === 'CLOSED' ? 100 : Math.round((satisfiedObligations / cpObligations.length) * 100) || 30;
 
   const handleSimulateClose = () => {
     setIsSimulating(true);
@@ -293,7 +295,10 @@ export function CheckpointDetail() {
                       {!isSimulating && simulationResult === 'SUCCESS' && (
                         <Button 
                           className="bg-success hover:bg-success/90 text-white text-xs"
-                          onClick={() => setComingSoon({ open: true, feature: 'Confirm Checkpoint Closure' })}
+                          onClick={() => {
+                            requestCheckpointClosure(cp.id);
+                            navigate('/checkpoints');
+                          }}
                         >
                           Confirm Closure
                         </Button>
@@ -321,7 +326,7 @@ export function CheckpointDetail() {
                 <div className="grid grid-cols-2 gap-4 pt-2">
                   <div className="space-y-1">
                     <p className="text-[10px] text-muted-foreground">Obligations</p>
-                    <p className="text-sm font-bold text-foreground">{satisfiedObligations}/{obligations.length}</p>
+                    <p className="text-sm font-bold text-foreground">{satisfiedObligations}/{cpObligations.length}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-[10px] text-muted-foreground">Evidence</p>
@@ -367,7 +372,7 @@ export function CheckpointDetail() {
               Required Obligations
             </h3>
             <div className="grid grid-cols-1 gap-3">
-              {obligations.map((ob) => (
+              {cpObligations.map((ob) => (
                 <Card key={ob.id} className="bg-surface border-border hover:border-accent/30 transition-colors cursor-pointer" onClick={() => navigate(`/obligations/${ob.id}`)}>
                   <CardContent className="p-4 flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -398,7 +403,7 @@ export function CheckpointDetail() {
             <CardContent className="space-y-4">
               {cp.decisionIds.length > 0 ? (
                 cp.decisionIds.map((dId) => {
-                  const decision = mockDecisions.find(d => d.id === dId);
+                  const decision = decisions.find(d => d.id === dId);
                   return (
                     <div key={dId} className="p-3 rounded-lg bg-card border border-border space-y-2 cursor-pointer hover:border-accent/50 transition-colors" onClick={() => navigate(`/decision-log/${dId}`)}>
                       <div className="flex items-center justify-between">
