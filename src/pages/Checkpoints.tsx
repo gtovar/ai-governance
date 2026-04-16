@@ -35,7 +35,7 @@ import { ComingSoon } from '../components/ComingSoon';
 
 export function Checkpoints() {
   const navigate = useNavigate();
-  const { checkpoints, workspaces, obligations, decisions } = useGovernance();
+  const { checkpoints, workspaces, obligations, decisions, getCheckpointReadiness } = useGovernance();
   const [comingSoon, setComingSoon] = useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
 
   return (
@@ -56,9 +56,9 @@ export function Checkpoints() {
       <div className="grid grid-cols-1 gap-6">
         {checkpoints.map((cp) => {
           const workspace = workspaces.find(w => w.id === cp.workspaceId);
+          const progress = getCheckpointReadiness(cp.id);
           const cpObligations = obligations.filter(o => cp.obligationIds.includes(o.id));
-          const satisfiedObligations = cpObligations.filter(o => o.status === 'SATISFIED').length;
-          const progress = cp.status === 'CLOSED' ? 100 : Math.round((satisfiedObligations / cpObligations.length) * 100) || 30;
+          const satisfiedObligationsCount = cpObligations.filter(o => o.status === 'SATISFIED' || o.status === 'WAIVED').length;
 
           return (
             <Card key={cp.id} className="bg-surface border-border hover:border-accent/30 transition-all duration-300 group overflow-hidden cursor-pointer" onClick={() => navigate(`/checkpoints/${cp.id}`)}>
@@ -95,8 +95,8 @@ export function Checkpoints() {
                       <Progress value={progress} className="h-1.5 bg-card" />
                       <div className="flex gap-4 pt-2">
                         <div className="flex items-center gap-2">
-                          <CheckCircle2 className={cn("w-3 h-3", satisfiedObligations === cpObligations.length ? "text-success" : "text-muted-foreground")} />
-                          <span className="text-[10px] text-muted-foreground">{satisfiedObligations}/{cpObligations.length} Obligations</span>
+                          <CheckCircle2 className={cn("w-3 h-3", satisfiedObligationsCount === cpObligations.length ? "text-success" : "text-muted-foreground")} />
+                          <span className="text-[10px] text-muted-foreground">{satisfiedObligationsCount}/{cpObligations.length} Obligations</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <FileText className="w-3 h-3 text-muted-foreground" />
@@ -156,9 +156,19 @@ export function Checkpoints() {
 export function CheckpointDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { checkpoints, workspaces, obligations, decisions, requestCheckpointClosure } = useGovernance();
+  const { 
+    checkpoints, 
+    workspaces, 
+    obligations, 
+    decisions, 
+    requestCheckpointClosure,
+    getCheckpointReadiness,
+    isCheckpointClosable,
+    getWorkspaceObligations,
+    getObligationEvidence
+  } = useGovernance();
   const [isSimulating, setIsSimulating] = useState(false);
-  const [simulationResult, setSimulationResult] = useState<'SUCCESS' | 'FAILURE' | null>(null);
+  const [simulationResult, setSimulationResult] = useState<{ outcome: 'ALLOW' | 'DENY' | 'REQUIRE_EVIDENCE'; reasons: string[] } | null>(null);
   const [comingSoon, setComingSoon] = useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
 
   const cp = checkpoints.find(c => c.id === id);
@@ -166,18 +176,20 @@ export function CheckpointDetail() {
 
   const workspace = workspaces.find(w => w.id === cp.workspaceId);
   const cpObligations = obligations.filter(o => cp.obligationIds.includes(o.id));
-  const satisfiedObligations = cpObligations.filter(o => o.status === 'SATISFIED').length;
-  const progress = cp.status === 'CLOSED' ? 100 : Math.round((satisfiedObligations / cpObligations.length) * 100) || 30;
+  const satisfiedObligationsCount = cpObligations.filter(o => o.status === 'SATISFIED' || o.status === 'WAIVED').length;
+  const progress = getCheckpointReadiness(cp.id);
 
   const handleSimulateClose = () => {
     setIsSimulating(true);
     setSimulationResult(null);
     
-    // Simulate system evaluation
+    // Simulate system evaluation using real logic
     setTimeout(() => {
       setIsSimulating(false);
-      setSimulationResult(cp.id === 'cp-1' ? 'SUCCESS' : 'FAILURE');
-    }, 2000);
+      const { closable, reasons } = isCheckpointClosable(cp.id);
+      const outcome = closable ? 'ALLOW' : (reasons.some(r => r.includes('Missing evidence')) ? 'REQUIRE_EVIDENCE' : 'DENY');
+      setSimulationResult({ outcome, reasons });
+    }, 1500);
   };
 
   return (
@@ -233,7 +245,7 @@ export function CheckpointDetail() {
                             <p className="text-xs text-muted-foreground mt-1">Checking obligations, evidence, and risk context...</p>
                           </div>
                         </div>
-                      ) : simulationResult === 'SUCCESS' ? (
+                      ) : simulationResult?.outcome === 'ALLOW' ? (
                         <div className="w-full space-y-6">
                           <div className="flex flex-col items-center gap-3">
                             <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center text-success border border-success/20">
@@ -250,12 +262,8 @@ export function CheckpointDetail() {
                               <span className="text-success font-mono font-bold">GOVERNANCE_PASSED</span>
                             </div>
                             <div className="flex items-center justify-between text-xs">
-                              <span className="text-muted-foreground">Evidence Validated</span>
-                              <span className="text-foreground/80 font-mono">100% (4/4)</span>
-                            </div>
-                            <div className="flex items-center justify-between text-xs">
                               <span className="text-muted-foreground">Trace ID</span>
-                              <span className="text-foreground/80 font-mono">tr-eval-9922</span>
+                              <span className="text-foreground/80 font-mono">tr-eval-{Math.floor(Math.random() * 9000) + 1000}</span>
                             </div>
                           </div>
                         </div>
@@ -266,33 +274,36 @@ export function CheckpointDetail() {
                               <XCircle className="w-8 h-8" />
                             </div>
                             <div className="text-center">
-                              <h4 className="text-xl font-bold text-error">Outcome: DENY</h4>
+                              <h4 className="text-xl font-bold text-error">Outcome: {simulationResult?.outcome}</h4>
                               <p className="text-sm text-muted-foreground">Governance requirements not met.</p>
                             </div>
                           </div>
                           <div className="p-4 rounded-lg bg-surface border border-border space-y-3">
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-error font-bold">MISSING_EVIDENCE</span>
-                              <span className="text-foreground/80 font-mono">ob-3, ob-4</span>
+                            <div className="space-y-2">
+                              <p className="text-[10px] uppercase text-muted-foreground font-bold">Failure Reasons:</p>
+                              <ul className="space-y-1">
+                                {simulationResult?.reasons.map((reason, i) => (
+                                  <li key={i} className="text-xs text-error flex items-center gap-2">
+                                    <AlertTriangle className="w-3 h-3" />
+                                    {reason}
+                                  </li>
+                                ))}
+                              </ul>
                             </div>
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-muted-foreground">Policy Violation</span>
-                              <span className="text-error font-mono">SEC-BLOCK-01</span>
-                            </div>
-                            <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center justify-between text-xs pt-2 border-t border-border">
                               <span className="text-muted-foreground">Trace ID</span>
-                              <span className="text-foreground/80 font-mono">tr-eval-4411</span>
+                              <span className="text-foreground/80 font-mono">tr-eval-{Math.floor(Math.random() * 9000) + 1000}</span>
                             </div>
                           </div>
                         </div>
                       )}
                     </div>
-
+ 
                     <DialogFooter className="gap-2">
                       <Button variant="outline" className="bg-surface border-border text-muted-foreground hover:text-foreground text-xs" onClick={() => setSimulationResult(null)}>
                         Close
                       </Button>
-                      {!isSimulating && simulationResult === 'SUCCESS' && (
+                      {!isSimulating && simulationResult?.outcome === 'ALLOW' && (
                         <Button 
                           className="bg-success hover:bg-success/90 text-white text-xs"
                           onClick={() => {
@@ -303,9 +314,9 @@ export function CheckpointDetail() {
                           Confirm Closure
                         </Button>
                       )}
-                      {!isSimulating && simulationResult === 'FAILURE' && (
+                      {!isSimulating && simulationResult?.outcome && simulationResult.outcome !== 'ALLOW' && (
                         <Button className="bg-accent hover:bg-accent/90 text-white text-xs" onClick={() => navigate('/obligations')}>
-                          View Missing Evidence
+                          View Obligations
                         </Button>
                       )}
                     </DialogFooter>
@@ -326,7 +337,7 @@ export function CheckpointDetail() {
                 <div className="grid grid-cols-2 gap-4 pt-2">
                   <div className="space-y-1">
                     <p className="text-[10px] text-muted-foreground">Obligations</p>
-                    <p className="text-sm font-bold text-foreground">{satisfiedObligations}/{cpObligations.length}</p>
+                    <p className="text-sm font-bold text-foreground">{satisfiedObligationsCount}/{cpObligations.length}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-[10px] text-muted-foreground">Evidence</p>

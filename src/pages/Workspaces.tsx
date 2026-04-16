@@ -157,7 +157,7 @@ export function Workspaces() {
                 <div className="flex items-center justify-between pt-2">
                   <div className="flex items-center gap-4">
                     <div className="flex flex-col">
-                      <span className="text-lg font-bold text-foreground">{openObligationsCount}</span>
+                      <span className="text-lg font-bold text-foreground">{obligations.filter(o => o.workspaceId === ws.id && o.status === 'OPEN').length}</span>
                       <span className="text-[10px] uppercase text-muted-foreground font-medium">Obligations</span>
                     </div>
                     <div className="h-8 w-[1px] bg-border" />
@@ -191,19 +191,32 @@ export function Workspaces() {
 
 function WorkspaceDetail({ workspace, onBack }: { workspace: any, onBack: () => void }) {
   const navigate = useNavigate();
-  const { checkpoints, obligations, decisions, telemetry, evidence, policyPacks, runEvaluation } = useGovernance();
+  const { 
+    checkpoints, 
+    obligations, 
+    decisions, 
+    telemetry, 
+    evidence, 
+    policyPacks, 
+    runEvaluation,
+    getWorkspaceObligations,
+    getWorkspaceCheckpoints,
+    getWorkspaceDecisions,
+    getCheckpointReadiness
+  } = useGovernance();
   const [comingSoon, setComingSoon] = useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
   
   const activeCheckpoint = checkpoints.find(c => c.id === workspace.activeCheckpointId);
-  const workspaceCheckpoints = checkpoints.filter(c => c.workspaceId === workspace.id);
-  const wsObligations = obligations.filter(o => o.workspaceId === workspace.id);
-  const wsDecisions = decisions.filter(d => d.workspaceId === workspace.id);
+  const workspaceCheckpoints = getWorkspaceCheckpoints(workspace.id);
+  const wsObligations = getWorkspaceObligations(workspace.id);
+  const wsDecisions = getWorkspaceDecisions(workspace.id);
   const wsTelemetry = telemetry.filter(t => t.workspaceId === workspace.id);
   const wsEvidence = evidence.filter(e => wsObligations.some(o => o.id === e.obligationId));
 
   const openObligations = wsObligations.filter(o => o.status === 'OPEN');
-  const satisfiedObligations = wsObligations.filter(o => o.status === 'SATISFIED');
+  const satisfiedObligations = wsObligations.filter(o => o.status === 'SATISFIED' || o.status === 'WAIVED');
   const evidenceCoverage = wsObligations.length > 0 ? Math.round((satisfiedObligations.length / wsObligations.length) * 100) : 0;
+  const readiness = activeCheckpoint ? getCheckpointReadiness(activeCheckpoint.id) : 100;
 
   return (
     <div className="space-y-6">

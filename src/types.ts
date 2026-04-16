@@ -11,7 +11,6 @@ export interface Workspace {
   status: Status;
   type: string;
   activeCheckpointId: string;
-  openObligationsCount: number;
   lastDecisionOutcome: DecisionOutcome;
   riskLevel: Severity;
   description: string;

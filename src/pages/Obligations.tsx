@@ -34,6 +34,18 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { ComingSoon } from '../components/ComingSoon';
 
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input as UiInput } from "@/components/ui/input";
+
 export function Obligations() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -170,8 +182,10 @@ export function Obligations() {
 export function ObligationDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { obligations, workspaces, evidence, decisions, satisfyObligation, waiveObligation } = useGovernance();
+  const { obligations, workspaces, evidence, decisions, satisfyObligation, waiveObligation, addEvidence } = useGovernance();
   const [comingSoon, setComingSoon] = React.useState<{ open: boolean; feature: string }>({ open: false, feature: '' });
+  const [isEvidenceDialogOpen, setIsEvidenceDialogOpen] = React.useState(false);
+  const [newEvidence, setNewEvidence] = React.useState({ title: '', type: 'DOCUMENT' });
 
   const ob = obligations.find(o => o.id === id);
   if (!ob) return <div className="p-8 text-center text-muted-foreground">Obligation not found</div>;
@@ -179,6 +193,13 @@ export function ObligationDetail() {
   const workspace = workspaces.find(w => w.id === ob.workspaceId);
   const obEvidence = evidence.filter(e => e.obligationId === ob.id);
   const relatedDecisions = decisions.filter(d => d.obligationIds.includes(ob.id));
+
+  const handleAddEvidence = () => {
+    if (!newEvidence.title) return;
+    addEvidence(ob.id, newEvidence.title, newEvidence.type);
+    setIsEvidenceDialogOpen(false);
+    setNewEvidence({ title: '', type: 'DOCUMENT' });
+  };
 
   return (
     <div className="space-y-6">
@@ -237,10 +258,58 @@ export function ObligationDetail() {
           </Card>
 
           <div className="space-y-4">
-            <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-              <Paperclip className="w-5 h-5 text-accent" />
-              Evidence Audit Trail
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                <Paperclip className="w-5 h-5 text-accent" />
+                Evidence Audit Trail
+              </h3>
+              <Dialog open={isEvidenceDialogOpen} onOpenChange={setIsEvidenceDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="bg-surface border-border text-accent hover:text-accent/80 text-xs h-8 gap-2">
+                    <Paperclip className="w-3 h-3" />
+                    Add Evidence
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-card border-border text-foreground">
+                  <DialogHeader>
+                    <DialogTitle>Add Evidence Record</DialogTitle>
+                    <DialogDescription>
+                      Upload or link evidence to satisfy this obligation.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="title">Evidence Title</Label>
+                      <UiInput 
+                        id="title" 
+                        placeholder="e.g., SOC2 Type II Report 2024" 
+                        value={newEvidence.title}
+                        onChange={(e) => setNewEvidence({ ...newEvidence, title: e.target.value })}
+                        className="bg-surface border-border"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="type">Evidence Type</Label>
+                      <select 
+                        id="type"
+                        className="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                        value={newEvidence.type}
+                        onChange={(e) => setNewEvidence({ ...newEvidence, type: e.target.value })}
+                      >
+                        <option value="DOCUMENT">Document</option>
+                        <option value="SCREENSHOT">Screenshot</option>
+                        <option value="LOG_EXPORT">Log Export</option>
+                        <option value="ATTESTATION">Attestation</option>
+                      </select>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsEvidenceDialogOpen(false)} className="bg-surface border-border">Cancel</Button>
+                    <Button onClick={handleAddEvidence} className="bg-accent hover:bg-accent/90 text-white">Add Evidence</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
             {obEvidence.length > 0 ? (
               <div className="grid grid-cols-1 gap-3">
                 {obEvidence.map((ev) => (

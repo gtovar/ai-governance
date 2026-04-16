@@ -113,7 +113,7 @@ export function Dashboard() {
                       </p>
                       <div className="flex items-center gap-3 mt-2">
                         <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Owner: {ws.owner}</span>
-                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Obligations: {ws.openObligationsCount}</span>
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Obligations: {obligations.filter(o => o.workspaceId === ws.id && o.status === 'OPEN').length}</span>
                       </div>
                     </div>
                     <Button size="sm" className="bg-accent hover:bg-accent/90 text-white text-xs" onClick={(e) => { e.stopPropagation(); navigate(`/workspaces/${ws.id}`); }}>
